@@ -6,6 +6,7 @@ import {
   FileText,
   ImageIcon,
   Menu,
+  MoreVertical,
   Paperclip,
   Pencil,
   Plus,
@@ -15,7 +16,6 @@ import {
   Square,
   Trash2,
   X,
-  Check,
 } from "lucide-react";
 import { toast } from "sonner";
 import { MgiLogo } from "@/components/mgi/MgiLogo";
