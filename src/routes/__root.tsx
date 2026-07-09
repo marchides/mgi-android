@@ -76,6 +76,21 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   );
 }
 
+const contentSecurityPolicy = [
+  "default-src 'self'",
+  "base-uri 'self'",
+  "object-src 'none'",
+  "form-action 'self'",
+  "frame-ancestors 'none'",
+  "script-src 'self' 'unsafe-inline'",
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+  "font-src 'self' https://fonts.gstatic.com data:",
+  "img-src 'self' data: blob:",
+  "connect-src 'self' https://openrouter.ai https://*.openrouter.ai http://localhost:* http://127.0.0.1:* ws://localhost:* ws://127.0.0.1:*",
+  "worker-src 'self' blob:",
+  "manifest-src 'self'",
+].join("; ");
+
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   head: () => ({
     meta: [
@@ -83,6 +98,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       {
         name: "viewport",
         content: "width=device-width, initial-scale=1, viewport-fit=cover",
+      },
+      {
+        httpEquiv: "Content-Security-Policy",
+        content: contentSecurityPolicy,
       },
       { title: "Monty's GLM Interface — MGI" },
       {
