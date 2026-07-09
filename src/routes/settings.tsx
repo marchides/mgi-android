@@ -40,19 +40,25 @@ function SettingsPage() {
 
   return (
     <div className="mx-auto flex min-h-[100dvh] max-w-2xl flex-col bg-background text-foreground">
-      <header className="sticky top-0 z-10 flex items-center gap-2 border-b border-border bg-background/85 backdrop-blur px-3 py-2.5">
-        <Link
-          to="/"
-          className="grid h-9 w-9 place-items-center rounded-lg hover:bg-muted"
-          aria-label="Back"
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </Link>
-        <MgiLogo size={26} />
-        <h1 className="text-base font-semibold">Settings</h1>
+      <header
+        className="sticky top-0 z-10 border-b border-border bg-background/85 backdrop-blur"
+        style={{ paddingTop: "env(safe-area-inset-top)" }}
+      >
+        <div className="flex h-12 items-center gap-2 px-2 sm:h-14 sm:px-3">
+          <Link
+            to="/"
+            className="grid h-9 w-9 shrink-0 place-items-center rounded-lg hover:bg-muted"
+            aria-label="Back"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Link>
+          <MgiLogo size={24} className="shrink-0" />
+          <h1 className="truncate text-base font-semibold">Settings</h1>
+        </div>
       </header>
 
-      <div className="mgi-scroll flex-1 overflow-y-auto px-3 py-4 space-y-4">
+      <div className="mgi-scroll flex-1 overflow-y-auto px-3 py-3 space-y-3 sm:py-4 sm:space-y-4">
+
         {/* API Key */}
         <Card title="OpenRouter API Key" description="Stored locally on this device only. Never logged or shared.">
           <div className="flex items-center gap-2">
@@ -408,13 +414,14 @@ function Card({
   children: React.ReactNode;
 }) {
   return (
-    <section className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+    <section className="rounded-2xl border border-border bg-card p-3 shadow-sm sm:p-4">
       <h2 className="font-display text-sm font-semibold">{title}</h2>
       {description && (
         <p className="mt-0.5 text-[11px] text-muted-foreground">{description}</p>
       )}
-      <div className="mt-3 space-y-2">{children}</div>
+      <div className="mt-2 space-y-2 sm:mt-3">{children}</div>
     </section>
+
   );
 }
 
