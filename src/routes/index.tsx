@@ -427,13 +427,7 @@ function deriveTitle(text: string): string {
   return t.length ? t : "New chat";
 }
 
-function EmptyState({ onPick }: { onPick: (t: string) => void }) {
-  const suggestions = [
-    "Explain the difference between GLM-5.2 and GLM-4.6.",
-    "Write a Python function to debounce async calls.",
-    "Draft a tight product description for a smart home hub.",
-    "Summarise this text: …",
-  ];
+function EmptyState({ onPick: _onPick }: { onPick: (t: string) => void }) {
   return (
     <div className="mx-auto flex max-w-md flex-col items-center gap-5 pt-10 text-center">
       <MgiLogo size={72} />
@@ -444,17 +438,6 @@ function EmptyState({ onPick }: { onPick: (t: string) => void }) {
         <p className="mt-1 text-sm text-muted-foreground">
           Chat with GLM through your own OpenRouter key.
         </p>
-      </div>
-      <div className="grid w-full grid-cols-1 gap-2">
-        {suggestions.map((s) => (
-          <button
-            key={s}
-            onClick={() => onPick(s)}
-            className="rounded-xl border border-border bg-card px-3 py-3 text-left text-sm hover:bg-muted"
-          >
-            {s}
-          </button>
-        ))}
       </div>
     </div>
   );
