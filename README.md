@@ -182,6 +182,10 @@ bubblewrap init --manifest https://<your-domain>/manifest.webmanifest
 bubblewrap build
 ```
 
+Upload the resulting `.aab` to Play Console.
+
+
+
 
 
 ## Android visual test checklist
