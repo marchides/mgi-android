@@ -12,7 +12,7 @@ A polished mobile-first **PWA** chat client for **GLM models via OpenRouter**, b
 - Streaming responses, markdown + code blocks with copy button.
 - History modes: full / recent N / auto-trim.
 - Optional system prompt.
-- Light & dark themes + 7 accent colors, system-mode auto-switch.
+- Light & dark themes + 7 standard accents plus two premium metallic accents: **Gold** (light-only) and **Platinum** (dark-only). Mode-locked accents auto-switch the theme mode when selected.
 - Mobile safe-area + keyboard-safe bottom input.
 - API key stored **locally on device only** (`localStorage`). Never logged, never sent anywhere except `openrouter.ai`.
 - Installable PWA with proper manifest, standalone display, portrait orientation, Z.ai-based icon.
@@ -32,7 +32,16 @@ Open in a mobile browser or use device emulation.
 npm run build
 ```
 
-Outputs a static-hostable web app. Deploy to any static host (Vercel, Netlify, Cloudflare Pages, etc.). Serve over HTTPS so the PWA install prompt and (future) Capacitor wrapping work.
+TanStack Start emits an SSR-capable bundle under `dist/`:
+
+| Path | Contents |
+| --- | --- |
+| `dist/client/` | Hashed JS/CSS, `manifest.webmanifest`, `icon.png`, `_headers` |
+| `dist/server/` | Nitro SSR entry (renders HTML per request) |
+| `dist/sw.js`, `dist/workbox-*.js` | Guarded service worker for the PWA shell |
+
+Deploy the whole `dist/` tree to any Nitro-compatible host (Cloudflare Pages / Workers, Vercel, Netlify, Node). Serve over HTTPS so the PWA install prompt (and Capacitor wrapping) work. There is **no** standalone static `index.html` — the SSR entry produces HTML at request time.
+
 
 ## Add your OpenRouter API key
 
