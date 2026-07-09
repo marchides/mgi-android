@@ -487,6 +487,11 @@ function AccentSwatch({
   selected: boolean;
   onClick: () => void;
 }) {
+  const meta = ACCENTS.find((a) => a.name === name);
+  const isMetallic = !!meta?.metallic;
+  const background = isMetallic
+    ? meta!.metallic!.swatch
+    : `linear-gradient(135deg, oklch(${oklchLight}), oklch(${oklchDark}))`;
   return (
     <button
       onClick={onClick}
@@ -495,13 +500,18 @@ function AccentSwatch({
         selected ? "border-primary bg-accent" : "border-border hover:bg-muted",
       )}
       aria-label={label}
-      title={label}
+      title={
+        meta?.forceMode
+          ? `${label} — ${meta.forceMode} mode only`
+          : label
+      }
     >
       <span
-        className="h-8 w-8 rounded-full shadow-inner"
-        style={{
-          background: `linear-gradient(135deg, oklch(${oklchLight}), oklch(${oklchDark}))`,
-        }}
+        className={cn(
+          "h-8 w-8 rounded-full shadow-inner",
+          isMetallic && "ring-1 ring-black/10 dark:ring-white/15",
+        )}
+        style={{ background }}
       />
       <span className="text-[10px] text-muted-foreground group-hover:text-foreground">
         {label}
@@ -510,6 +520,7 @@ function AccentSwatch({
     </button>
   );
 }
+
 
 function formatTokens(n: number): string {
   if (n >= 1000) return `${Math.round(n / 1000)}k`;
