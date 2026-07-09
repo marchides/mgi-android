@@ -1,40 +1,75 @@
+import zaiLogo from "@/assets/zai-logo.png.asset.json";
+
 interface Props {
   size?: number;
   className?: string;
+  /** Solid tinted tile (accent bg + white mark) vs bare mark on transparent. */
+  variant?: "tile" | "mark";
 }
 
 /**
- * Placeholder MGI logomark. Minimal futuristic "Z" wedge inside a rounded
- * square. Swap the SVG paths when a real Z.ai logo asset is provided.
+ * MGI brand mark based on the Z.ai logomark.
+ * - "tile"  : accent-filled rounded square with the Z rendered in white via CSS mask.
+ * - "mark"  : just the Z, tinted with the current accent color.
  */
-export function MgiLogo({ size = 56, className }: Props) {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 64 64"
-      className={className}
-      xmlns="http://www.w3.org/2000/svg"
-      aria-label="MGI logo"
-    >
-      <defs>
-        <linearGradient id="mgi-g" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="oklch(var(--accent-oklch))" />
-          <stop
-            offset="100%"
-            stopColor="oklch(var(--accent-oklch) / 0.55)"
-          />
-        </linearGradient>
-      </defs>
-      <rect x="2" y="2" width="60" height="60" rx="16" fill="url(#mgi-g)" />
-      <path
-        d="M18 20 H46 L22 44 H46"
-        stroke="oklch(var(--on-accent-oklch))"
-        strokeWidth="4.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        fill="none"
+export function MgiLogo({ size = 56, className, variant = "tile" }: Props) {
+  if (variant === "mark") {
+    return (
+      <span
+        role="img"
+        aria-label="MGI logo"
+        className={className}
+        style={{
+          display: "inline-block",
+          width: size,
+          height: size,
+          backgroundColor: "oklch(var(--accent-oklch))",
+          WebkitMaskImage: `url(${zaiLogo.url})`,
+          maskImage: `url(${zaiLogo.url})`,
+          WebkitMaskRepeat: "no-repeat",
+          maskRepeat: "no-repeat",
+          WebkitMaskPosition: "center",
+          maskPosition: "center",
+          WebkitMaskSize: "contain",
+          maskSize: "contain",
+        }}
       />
-    </svg>
+    );
+  }
+
+  const inner = Math.round(size * 0.72);
+  return (
+    <span
+      role="img"
+      aria-label="MGI logo"
+      className={className}
+      style={{
+        display: "inline-grid",
+        placeItems: "center",
+        width: size,
+        height: size,
+        borderRadius: Math.round(size * 0.24),
+        background:
+          "linear-gradient(135deg, oklch(var(--accent-oklch)), oklch(var(--accent-oklch) / 0.7))",
+        boxShadow:
+          "0 1px 2px rgb(0 0 0 / 0.15), inset 0 1px 0 oklch(var(--on-accent-oklch) / 0.15)",
+      }}
+    >
+      <span
+        style={{
+          width: inner,
+          height: inner,
+          backgroundColor: "oklch(var(--on-accent-oklch))",
+          WebkitMaskImage: `url(${zaiLogo.url})`,
+          maskImage: `url(${zaiLogo.url})`,
+          WebkitMaskRepeat: "no-repeat",
+          maskRepeat: "no-repeat",
+          WebkitMaskPosition: "center",
+          maskPosition: "center",
+          WebkitMaskSize: "contain",
+          maskSize: "contain",
+        }}
+      />
+    </span>
   );
 }
