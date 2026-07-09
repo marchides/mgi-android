@@ -1,10 +1,12 @@
 import type {
   AppSettings,
+  Attachment,
   ChatMessage,
   ModelParameters,
   RoutingMode,
 } from "./types";
 import { resolveMaxTokens, estimateMessagesTokens } from "./tokens";
+import { formatTextAttachmentForPrompt } from "./attachments";
 
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 const OPENROUTER_MODELS_URL = "https://openrouter.ai/api/v1/models";
@@ -14,6 +16,14 @@ interface BuildOptions {
   messages: ChatMessage[]; // ordered, user+assistant only
   systemPromptOverride?: string;
 }
+
+type TextPart = { type: "text"; text: string };
+type ImagePart = { type: "image_url"; image_url: { url: string } };
+type FilePart = {
+  type: "file";
+  file: { filename: string; file_data: string };
+};
+type ContentPart = TextPart | ImagePart | FilePart;
 
 /**
  * Central request builder. Returns the JSON body to POST to OpenRouter,
@@ -27,10 +37,10 @@ export function buildOpenRouterBody({
   const system = systemPromptOverride ?? settings.systemPrompt;
   const trimmed = applyHistoryMode(messages, settings);
 
-  const payloadMessages: { role: string; content: string }[] = [];
+  const payloadMessages: { role: string; content: string | ContentPart[] }[] = [];
   if (system.trim()) payloadMessages.push({ role: "system", content: system });
   for (const m of trimmed) {
-    payloadMessages.push({ role: m.role, content: m.content });
+    payloadMessages.push({ role: m.role, content: buildMessageContent(m) });
   }
 
   const inputTokens = estimateMessagesTokens(system, trimmed);
@@ -54,6 +64,53 @@ export function buildOpenRouterBody({
   };
 
   return { body, inputTokens, max_tokens };
+}
+
+/**
+ * Turn a ChatMessage into either a plain string (fastest, most compatible)
+ * or an OpenRouter multimodal content array. Text/code attachments are
+ * concatenated as labelled blocks; images/PDFs are emitted as typed parts.
+ */
+function buildMessageContent(m: ChatMessage): string | ContentPart[] {
+  const attachments = m.attachments ?? [];
+  const usable = attachments.filter((a) => !a.error);
+  if (usable.length === 0) return m.content;
+
+  const textBlocks: string[] = [];
+  if (m.content.trim()) textBlocks.push(m.content);
+  const mediaParts: ContentPart[] = [];
+
+  for (const a of usable) {
+    if (a.kind === "text" && a.textContent != null) {
+      textBlocks.push(formatTextAttachmentForPrompt(a));
+    } else if (a.kind === "image" && a.dataUrl) {
+      mediaParts.push({ type: "image_url", image_url: { url: a.dataUrl } });
+    } else if (a.kind === "pdf" && a.dataUrl) {
+      mediaParts.push({
+        type: "file",
+        file: { filename: a.name, file_data: a.dataUrl },
+      });
+    } else {
+      // Payload not present (e.g. re-sent from stripped history) — mention it.
+      textBlocks.push(`[Attachment omitted: ${a.name} (${a.mime})]`);
+    }
+  }
+
+  if (mediaParts.length === 0) return textBlocks.join("\n\n");
+  const parts: ContentPart[] = [];
+  const joined = textBlocks.join("\n\n");
+  if (joined) parts.push({ type: "text", text: joined });
+  parts.push(...mediaParts);
+  return parts;
+}
+
+/** Estimate extra input tokens from text/code attachments. */
+export function estimateAttachmentsTokens(attachments: Attachment[]): number {
+  let total = 0;
+  for (const a of attachments) {
+    if (a.textContent) total += Math.ceil(a.textContent.length / 4);
+  }
+  return total;
 }
 
 function paramFields(p: ModelParameters) {
