@@ -50,7 +50,7 @@ export const Route = createFileRoute("/")({
 });
 
 function ChatPage() {
-  const { settings } = useSettings();
+  const { settings, update } = useSettings();
   const {
     conversations,
     activeId,
