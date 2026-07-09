@@ -107,6 +107,13 @@ Target config (change to match your Play Console listing):
 
 A ready-to-use `capacitor.config.ts` is included at the project root with these placeholders.
 
+### Which webDir?
+
+TanStack Start's `npm run build` produces `dist/client/` (assets + PWA manifest) and `dist/server/` (SSR entry). There is **no static `index.html`** in `dist/client/`, so pointing Capacitor's WebView straight at the bundled files will show a blank page. Choose one:
+
+- **(Recommended) Hosted WebView** — deploy `dist/` to Cloudflare Pages / Vercel / Netlify, then set `server.url` in `capacitor.config.ts` to your deployed HTTPS URL. Capacitor loads the SSR-rendered app inside the WebView; `webDir: "dist/client"` is kept only so Capacitor tooling can find your icons and manifest.
+- **Fully-offline wrap** — add a prerender step that emits a static `index.html` (and per-route HTML) into `dist/client/`, then leave `server.url` unset. This path is not wired by default because MGI's runtime is client-only and hosting is trivial.
+
 Steps:
 
 ```bash
@@ -114,16 +121,20 @@ Steps:
 npm install
 npm run build
 
-# 2. Add Capacitor + Android platform
+# 2. Deploy dist/ to a static/edge host and note the HTTPS URL,
+#    then set server.url in capacitor.config.ts to that URL.
+
+# 3. Add Capacitor + Android platform
 npm install @capacitor/core @capacitor/cli @capacitor/android
 npx cap add android
 
-# 3. Sync the built web assets into the Android project
+# 4. Sync the built web assets into the Android project
 npx cap sync android
 
-# 4. Open Android Studio
+# 5. Open Android Studio
 npx cap open android
 ```
+
 
 In Android Studio:
 
