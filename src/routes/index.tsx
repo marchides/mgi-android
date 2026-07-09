@@ -69,6 +69,8 @@ function ChatPage() {
   const listRef = useRef<HTMLDivElement | null>(null);
   const [editingMsgId, setEditingMsgId] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState("");
+  const [pendingAtts, setPendingAtts] = useState<Attachment[]>([]);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const active = useMemo<Conversation | null>(
     () => conversations.find((c) => c.id === activeId) ?? null,
