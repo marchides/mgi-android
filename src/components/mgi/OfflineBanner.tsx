@@ -24,7 +24,8 @@ export function OfflineBanner() {
     <div
       role="status"
       aria-live="polite"
-      className="sticky top-0 z-50 w-full bg-amber-500/95 px-3 py-1.5 text-center text-xs font-medium text-black shadow-sm"
+      className="sticky top-0 z-50 w-full bg-amber-500/95 px-3 pb-1.5 text-center text-xs font-medium text-black shadow-sm"
+      style={{ paddingTop: "calc(var(--safe-top) + 0.375rem)" }}
     >
       You are offline. Chat requires internet.
     </div>

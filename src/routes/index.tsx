@@ -314,7 +314,7 @@ function ChatPage() {
       {/* Header */}
       <header
         className="sticky top-0 z-20 border-b border-border bg-background/85 backdrop-blur"
-        style={{ paddingTop: "env(safe-area-inset-top)" }}
+        style={{ paddingTop: "var(--safe-top)" }}
       >
         <div className="flex h-12 items-center gap-1.5 px-2 sm:h-14 sm:gap-2 sm:px-3">
         <button
@@ -434,7 +434,7 @@ function ChatPage() {
       </div>
 
       {/* Composer */}
-      <div className="sticky bottom-0 z-10 border-t border-border bg-background/95 backdrop-blur px-3 pb-[max(env(safe-area-inset-bottom),0.5rem)] pt-2">
+      <div className="sticky bottom-0 z-10 border-t border-border bg-background/95 backdrop-blur px-3 pb-[max(var(--safe-bottom),0.5rem)] pt-2">
         <div className="mx-auto max-w-2xl space-y-2">
           {pendingAtts.length > 0 && (
             <AttachmentStrip
@@ -513,7 +513,13 @@ function ChatPage() {
         <div className="fixed inset-0 z-40" onClick={() => setSidebarOpen(false)}>
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
           <aside
-            className="absolute left-0 top-0 flex h-full w-[85%] max-w-sm flex-col border-r border-border bg-background shadow-xl"
+            className="absolute left-0 top-0 flex h-[100dvh] w-[85%] max-w-sm flex-col border-r border-border bg-background shadow-xl"
+            style={{
+              paddingTop: "var(--safe-top)",
+              paddingBottom: "var(--safe-bottom)",
+              paddingLeft: "var(--safe-left)",
+              boxSizing: "border-box",
+            }}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center gap-2 border-b border-border px-3 py-3">

@@ -1,4 +1,13 @@
-import zaiLogo from "@/assets/zai-logo.png.asset.json";
+import { useState } from "react";
+
+/**
+ * MGI brand mark based on the Z.ai logomark.
+ * The logo is bundled at /zai-logo.png (public/) so it ships inside
+ * dist/client and works offline in the Capacitor Android WebView.
+ * If the image ever fails to load, we fall back to a tinted "Z" glyph
+ * so the app never renders a broken image.
+ */
+const LOGO_URL = "/zai-logo.png";
 
 interface Props {
   size?: number;
@@ -7,31 +16,51 @@ interface Props {
   variant?: "tile" | "mark";
 }
 
-/**
- * MGI brand mark based on the Z.ai logomark.
- * - "tile"  : accent-filled rounded square with the Z rendered in white via CSS mask.
- * - "mark"  : just the Z, tinted with the current accent color.
- */
+function FallbackGlyph({ size, color }: { size: number; color: string }) {
+  return (
+    <span
+      aria-hidden="true"
+      style={{
+        display: "inline-grid",
+        placeItems: "center",
+        width: size,
+        height: size,
+        fontFamily: "var(--font-display, system-ui)",
+        fontWeight: 800,
+        fontSize: Math.round(size * 0.6),
+        lineHeight: 1,
+        color,
+      }}
+    >
+      Z
+    </span>
+  );
+}
+
 export function MgiLogo({ size = 56, className, variant = "tile" }: Props) {
+  const [failed, setFailed] = useState(false);
+
   if (variant === "mark") {
+    if (failed) {
+      return (
+        <span className={className} style={{ display: "inline-block" }}>
+          <FallbackGlyph size={size} color="oklch(var(--accent-oklch))" />
+        </span>
+      );
+    }
     return (
-      <span
-        role="img"
-        aria-label="MGI logo"
+      <img
+        src={LOGO_URL}
+        alt="MGI logo"
+        width={size}
+        height={size}
+        onError={() => setFailed(true)}
         className={className}
         style={{
           display: "inline-block",
           width: size,
           height: size,
-          backgroundColor: "oklch(var(--accent-oklch))",
-          WebkitMaskImage: `url(${zaiLogo.url})`,
-          maskImage: `url(${zaiLogo.url})`,
-          WebkitMaskRepeat: "no-repeat",
-          maskRepeat: "no-repeat",
-          WebkitMaskPosition: "center",
-          maskPosition: "center",
-          WebkitMaskSize: "contain",
-          maskSize: "contain",
+          objectFit: "contain",
         }}
       />
     );
@@ -55,21 +84,24 @@ export function MgiLogo({ size = 56, className, variant = "tile" }: Props) {
           "0 1px 2px rgb(0 0 0 / 0.15), inset 0 1px 0 oklch(var(--on-accent-oklch) / 0.15)",
       }}
     >
-      <span
-        style={{
-          width: inner,
-          height: inner,
-          backgroundColor: "oklch(var(--on-accent-oklch))",
-          WebkitMaskImage: `url(${zaiLogo.url})`,
-          maskImage: `url(${zaiLogo.url})`,
-          WebkitMaskRepeat: "no-repeat",
-          maskRepeat: "no-repeat",
-          WebkitMaskPosition: "center",
-          maskPosition: "center",
-          WebkitMaskSize: "contain",
-          maskSize: "contain",
-        }}
-      />
+      {failed ? (
+        <FallbackGlyph size={inner} color="oklch(var(--on-accent-oklch))" />
+      ) : (
+        <img
+          src={LOGO_URL}
+          alt=""
+          width={inner}
+          height={inner}
+          onError={() => setFailed(true)}
+          style={{
+            width: inner,
+            height: inner,
+            objectFit: "contain",
+            // Tint the black-on-transparent mark to the on-accent color.
+            filter: "brightness(0) invert(1)",
+          }}
+        />
+      )}
     </span>
   );
 }

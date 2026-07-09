@@ -103,7 +103,7 @@ function SettingsPage() {
     <div className="mx-auto flex min-h-[100dvh] max-w-2xl flex-col bg-background text-foreground">
       <header
         className="sticky top-0 z-10 border-b border-border bg-background/85 backdrop-blur"
-        style={{ paddingTop: "env(safe-area-inset-top)" }}
+        style={{ paddingTop: "var(--safe-top)" }}
       >
         <div className="flex h-12 items-center gap-2 px-2 sm:h-14 sm:px-3">
           <Link
