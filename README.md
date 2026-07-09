@@ -32,15 +32,18 @@ Open in a mobile browser or use device emulation.
 npm run build
 ```
 
-TanStack Start emits an SSR-capable bundle under `dist/`:
+MGI builds to a **fully static** client-side app — no Node/SSR server at runtime:
 
 | Path | Contents |
 | --- | --- |
-| `dist/client/` | Hashed JS/CSS, `manifest.webmanifest`, `icon.png`, `_headers` |
-| `dist/server/` | Nitro SSR entry (renders HTML per request) |
-| `dist/sw.js`, `dist/workbox-*.js` | Guarded service worker for the PWA shell |
+| `dist/client/index.html` | Prerendered SPA shell (TanStack Start SPA mode) |
+| `dist/client/assets/` | Hashed JS/CSS bundles |
+| `dist/client/manifest.webmanifest`, `dist/client/icon.png` | PWA manifest + icon |
+| `dist/client/sw.js`, `dist/client/workbox-*.js` | Precached service worker for the offline shell |
+| `dist/server/` | Build-time byproduct used only to prerender the shell. **Not deployed.** |
 
-Deploy the whole `dist/` tree to any Nitro-compatible host (Cloudflare Pages / Workers, Vercel, Netlify, Node). Serve over HTTPS so the PWA install prompt (and Capacitor wrapping) work. There is **no** standalone static `index.html` — the SSR entry produces HTML at request time.
+Deploy `dist/client/` to any static host (Cloudflare Pages, Vercel, Netlify, GitHub Pages, S3, nginx). Serve over HTTPS so the PWA install prompt (and Capacitor wrapping) work.
+
 
 
 ## Add your OpenRouter API key
