@@ -132,6 +132,28 @@ Upload the `.aab`:
 
 Each subsequent release: bump `versionCode` (integer, must strictly increase) and `versionName` in both `capacitor.config.ts` and `android/app/build.gradle`, then re-run `npm run build && npx cap sync android` before rebuilding the bundle.
 
+### Play Store submission checklist
+
+Before pressing **Roll out** in Play Console:
+
+- [ ] Signed `.aab` built from the `release` variant with your keystore
+- [ ] `applicationId` = `com.monty.glminterface` (matches Play Console listing)
+- [ ] `versionCode` strictly greater than the previously uploaded build
+- [ ] `versionName` follows semver (e.g. `1.0.0`, `1.0.1`)
+- [ ] App icon (512×512 PNG) uploaded to Play Console
+- [ ] Feature graphic (1024×500 PNG) uploaded
+- [ ] At least 2 phone screenshots
+- [ ] Short description (≤80 chars) and full description (≤4000 chars) written
+- [ ] Privacy policy URL — required because the app collects and stores an API key locally; publish a page stating: no data leaves the device except direct calls to `openrouter.ai`
+- [ ] Data safety form filled: "no data collected by the developer"
+- [ ] Content rating questionnaire completed
+- [ ] Target audience & content declaration (13+ is typical)
+- [ ] App category set (Productivity / Tools)
+- [ ] Internal testing track validated on a real device before Production
+- [ ] Ads declaration: **No ads**
+- [ ] Government / financial declarations: **No**
+
+
 ## Alternative: Trusted Web Activity (Bubblewrap)
 
 If you'd rather ship the hosted PWA as a Play Store app without Capacitor:
