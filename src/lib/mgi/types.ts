@@ -1,5 +1,21 @@
 export type Role = "system" | "user" | "assistant";
 
+export type AttachmentKind = "image" | "pdf" | "text" | "other";
+
+export interface Attachment {
+  id: string;
+  name: string;
+  mime: string;
+  size: number;
+  kind: AttachmentKind;
+  /** Data URL for images/PDFs. Omitted from persisted history unless the user opts in. */
+  dataUrl?: string;
+  /** Extracted text for text/code files. Omitted from persisted history unless the user opts in. */
+  textContent?: string;
+  /** Read/attach error (e.g. too large). */
+  error?: string;
+}
+
 export interface ChatMessage {
   id: string;
   role: Role;
@@ -12,6 +28,7 @@ export interface ChatMessage {
     total_tokens?: number;
   };
   error?: string;
+  attachments?: Attachment[];
 }
 
 export interface Conversation {
