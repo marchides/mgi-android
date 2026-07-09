@@ -28,7 +28,13 @@ export default defineConfig({
       // Guarded PWA offline shell. Registration is refused in dev / Lovable preview
       // by src/lib/mgi/pwa-register.ts — this plugin only builds the SW; a runtime
       // wrapper decides whether to register it.
-      VitePWA({
+      //
+      // Scope every emitted plugin to the `client` environment. Vite 8's
+      // environment API otherwise resolves the plugin against both `client`
+      // and `ssr` envs; the SSR resolution wins last and vite-plugin-pwa's
+      // `closeBundle` short-circuits when `build.ssr` is truthy, so no
+      // `sw.js` ever gets written next to `index.html`.
+      ...VitePWA({
         registerType: "prompt", // safer than autoUpdate: never auto-reload during a live chat stream
         injectRegister: null,   // registration handled by our guarded wrapper only
         devOptions: { enabled: false },
@@ -38,7 +44,7 @@ export default defineConfig({
         workbox: {
           // Precache ONLY the built app shell + local static assets. No API data.
           globPatterns: ["**/*.{js,css,html,ico,png,svg,webmanifest,woff2}"],
-          navigateFallback: "/",
+          navigateFallback: "/index.html",
           navigateFallbackDenylist: [/^\/~oauth/, /^\/api\//],
           // Never intercept OpenRouter or any streaming/chat traffic.
           // Cross-origin requests (openrouter.ai) are not matched by these handlers.
@@ -74,7 +80,10 @@ export default defineConfig({
           clientsClaim: false, // wait for user confirmation via the "Update available" prompt
           skipWaiting: false,
         },
-      }),
+      }).map((p) => ({
+        ...p,
+        applyToEnvironment: (env: { name: string }) => env.name === "client",
+      })),
     ],
   },
 });
