@@ -29,7 +29,13 @@ export function ThemeController() {
       root.classList.toggle("dark", dark);
       const val = dark ? accent.dark : accent.light;
       root.style.setProperty("--accent-oklch", val);
-      root.style.setProperty("--on-accent-oklch", accent.onAccent);
+      const onAccent =
+        accent.name === "mono"
+          ? dark
+            ? "0.12 0 0"
+            : "1 0 0"
+          : accent.onAccent;
+      root.style.setProperty("--on-accent-oklch", onAccent);
       const hue = val.split(" ")[2] ?? "260";
       root.style.setProperty("--accent-hue", hue);
 
