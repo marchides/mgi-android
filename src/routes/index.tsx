@@ -6,6 +6,7 @@ import {
   FileText,
   ImageIcon,
   Menu,
+  MoreVertical,
   Paperclip,
   Pencil,
   Plus,
@@ -15,7 +16,6 @@ import {
   Square,
   Trash2,
   X,
-  Check,
 } from "lucide-react";
 import { toast } from "sonner";
 import { MgiLogo } from "@/components/mgi/MgiLogo";
@@ -71,6 +71,7 @@ function ChatPage() {
   const [editDraft, setEditDraft] = useState("");
   const [pendingAtts, setPendingAtts] = useState<Attachment[]>([]);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [renameTarget, setRenameTarget] = useState<Conversation | null>(null);
 
   const active = useMemo<Conversation | null>(
     () => conversations.find((c) => c.id === activeId) ?? null,
@@ -328,7 +329,7 @@ function ChatPage() {
           <MgiLogo size={24} className="shrink-0" />
           <div className="min-w-0 flex-1">
             <div className="truncate text-sm font-semibold leading-tight">
-              {active?.title ?? "Monty's GLM Interface"}
+              {active?.title?.trim() || "Monty's GLM Interface"}
             </div>
             <div className="truncate text-[10px] leading-tight text-muted-foreground">
               {settings.model} · {settings.routingMode}
@@ -570,13 +571,29 @@ function ChatPage() {
                     setActiveId(c.id);
                     setSidebarOpen(false);
                   }}
-                  onRename={(t) => renameConversation(c.id, t)}
-                  onDelete={() => deleteConversation(c.id)}
+                  onRename={() => setRenameTarget(c)}
+                  onDelete={() => {
+                    if (confirm(`Delete "${c.title?.trim() || "Untitled conversation"}"? This cannot be undone.`)) {
+                      deleteConversation(c.id);
+                    }
+                  }}
                 />
               ))}
             </div>
           </aside>
         </div>
+      )}
+
+      {/* Rename dialog */}
+      {renameTarget && (
+        <RenameDialog
+          initial={renameTarget.title}
+          onCancel={() => setRenameTarget(null)}
+          onSave={(t) => {
+            renameConversation(renameTarget.id, t);
+            setRenameTarget(null);
+          }}
+        />
       )}
     </div>
   );
@@ -747,65 +764,166 @@ function ConversationRow({
   c: Conversation;
   active: boolean;
   onOpen: () => void;
-  onRename: (t: string) => void;
+  onRename: () => void;
   onDelete: () => void;
 }) {
-  const [renaming, setRenaming] = useState(false);
-  const [draft, setDraft] = useState(c.title);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const title = c.title?.trim() || "Untitled conversation";
   return (
     <div
       className={cn(
-        "group flex items-center gap-1 rounded-lg px-2 py-2 text-sm",
+        "relative flex items-center gap-1 rounded-lg px-2 py-2 text-sm",
         active ? "bg-accent text-accent-foreground" : "hover:bg-muted",
       )}
     >
-      {renaming ? (
+      <button onClick={onOpen} className="min-w-0 flex-1 truncate text-left">
+        {title}
+      </button>
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          setMenuOpen((v) => !v);
+        }}
+        className="grid h-8 w-8 shrink-0 place-items-center rounded hover:bg-muted"
+        aria-label="Conversation actions"
+        aria-haspopup="menu"
+        aria-expanded={menuOpen}
+      >
+        <MoreVertical className="h-4 w-4" />
+      </button>
+      {menuOpen && (
         <>
-          <input
-            autoFocus
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                onRename(draft || "Untitled");
-                setRenaming(false);
-              }
-              if (e.key === "Escape") setRenaming(false);
-            }}
-            className="flex-1 bg-transparent outline-none"
+          <div
+            className="fixed inset-0 z-30"
+            onClick={() => setMenuOpen(false)}
           />
-          <button
-            onClick={() => {
-              onRename(draft || "Untitled");
-              setRenaming(false);
-            }}
-            className="grid h-7 w-7 place-items-center rounded hover:bg-muted"
-            aria-label="Save"
+          <div
+            role="menu"
+            className="absolute right-1 top-10 z-40 min-w-[10rem] overflow-hidden rounded-lg border border-border bg-popover text-popover-foreground shadow-lg"
           >
-            <Check className="h-3.5 w-3.5" />
-          </button>
-        </>
-      ) : (
-        <>
-          <button onClick={onOpen} className="min-w-0 flex-1 truncate text-left">
-            {c.title}
-          </button>
-          <button
-            onClick={() => setRenaming(true)}
-            className="grid h-7 w-7 place-items-center rounded opacity-0 group-hover:opacity-100 hover:bg-muted"
-            aria-label="Rename"
-          >
-            <Pencil className="h-3.5 w-3.5" />
-          </button>
-          <button
-            onClick={onDelete}
-            className="grid h-7 w-7 place-items-center rounded opacity-0 group-hover:opacity-100 hover:bg-muted text-destructive"
-            aria-label="Delete"
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-          </button>
+            <button
+              role="menuitem"
+              onClick={() => {
+                setMenuOpen(false);
+                onRename();
+              }}
+              className="flex w-full items-center gap-2 px-3 py-2 text-sm hover:bg-muted"
+            >
+              <Pencil className="h-3.5 w-3.5" /> Rename
+            </button>
+            <button
+              role="menuitem"
+              onClick={() => {
+                setMenuOpen(false);
+                onDelete();
+              }}
+              className="flex w-full items-center gap-2 px-3 py-2 text-sm text-destructive hover:bg-muted"
+            >
+              <Trash2 className="h-3.5 w-3.5" /> Delete
+            </button>
+          </div>
         </>
       )}
+    </div>
+  );
+}
+
+function RenameDialog({
+  initial,
+  onCancel,
+  onSave,
+}: {
+  initial: string;
+  onCancel: () => void;
+  onSave: (title: string) => void;
+}) {
+  const [value, setValue] = useState(initial);
+  const inputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    // Focus + select on open (mobile keyboard auto-open)
+    const id = requestAnimationFrame(() => {
+      inputRef.current?.focus();
+      inputRef.current?.select();
+    });
+    return () => cancelAnimationFrame(id);
+  }, []);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onCancel();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onCancel]);
+
+  const trimmed = value.trim();
+  const canSave = trimmed.length > 0;
+  const submit = () => {
+    if (!canSave) return;
+    onSave(trimmed);
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 backdrop-blur-sm px-4"
+      style={{
+        paddingTop: "calc(var(--safe-top) + 2rem)",
+        paddingBottom: "calc(var(--safe-bottom) + 1rem)",
+      }}
+      onClick={onCancel}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="rename-title"
+        className="w-full max-w-sm overflow-hidden rounded-2xl border border-border bg-background shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="border-b border-border px-4 py-3">
+          <h2 id="rename-title" className="text-sm font-semibold">
+            Rename conversation
+          </h2>
+        </div>
+        <div className="p-4">
+          <input
+            ref={inputRef}
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                submit();
+              }
+            }}
+            placeholder="Conversation title"
+            className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+            enterKeyHint="done"
+            autoComplete="off"
+            spellCheck={false}
+          />
+        </div>
+        <div className="flex justify-end gap-2 border-t border-border bg-muted/30 px-4 py-3">
+          <button
+            onClick={onCancel}
+            className="rounded-lg px-3 py-1.5 text-sm hover:bg-muted"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={submit}
+            disabled={!canSave}
+            className={cn(
+              "rounded-lg px-3 py-1.5 text-sm font-medium",
+              canSave
+                ? "bg-primary text-primary-foreground hover:opacity-90"
+                : "bg-muted text-muted-foreground cursor-not-allowed",
+            )}
+          >
+            Save
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
