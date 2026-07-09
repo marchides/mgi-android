@@ -350,11 +350,28 @@ function ChatPage() {
       </header>
 
       {/* Warnings */}
-      {(bigContext || bigOutput || !hasKey) && (
+      {(bigContext || bigOutput || !hasKey || bigAttachments || pendingImageOnTextModel || pendingPdfOnNoPdfModel) && (
         <div className="border-b border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground space-y-1">
           {!hasKey && <p>⚠ Add your OpenRouter API key in Settings to start chatting.</p>}
           {bigContext && <p>⚠ Large context may be slow and expensive.</p>}
           {bigOutput && <p>⚠ Very large outputs can be slow and costly.</p>}
+          {bigAttachments && (
+            <p>⚠ Large attachments ({humanSize(totalPendingBytes)}) can raise cost and latency.</p>
+          )}
+          {pendingImageOnTextModel && (
+            <p>
+              ⚠ {settings.model} may not support images.{" "}
+              <button
+                onClick={switchToVisionModel}
+                className="underline hover:text-foreground"
+              >
+                Switch to {settings.visionModel}
+              </button>
+            </p>
+          )}
+          {pendingPdfOnNoPdfModel && (
+            <p>⚠ {settings.model} may not support PDFs. The provider may reject the file.</p>
+          )}
         </div>
       )}
 
