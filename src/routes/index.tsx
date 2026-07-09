@@ -329,7 +329,7 @@ function ChatPage() {
           <MgiLogo size={24} className="shrink-0" />
           <div className="min-w-0 flex-1">
             <div className="truncate text-sm font-semibold leading-tight">
-              {active?.title ?? "Monty's GLM Interface"}
+              {active?.title?.trim() || "Monty's GLM Interface"}
             </div>
             <div className="truncate text-[10px] leading-tight text-muted-foreground">
               {settings.model} · {settings.routingMode}
