@@ -175,3 +175,37 @@
   margin-left: 2px;
   animation: mgi-blink 1s steps(2) infinite;
 }
+
+/* ============================================================
+   Metallic accents (Gold / Platinum)
+   The base --accent-oklch keeps a sensible average tone so text
+   contrast, focus rings, and non-metallic components still work.
+   These rules paint metallic gradients on filled primary surfaces.
+   ============================================================ */
+html.mgi-metallic {
+  --primary: transparent;
+}
+html.mgi-metallic .bg-primary,
+html.mgi-metallic [data-slot="button"].bg-primary,
+html.mgi-metallic button.bg-primary {
+  background-image: var(--accent-metallic-surface) !important;
+  background-color: transparent !important;
+  color: oklch(var(--on-accent-oklch)) !important;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.35);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.25),
+    0 1px 2px rgba(0, 0, 0, 0.25);
+}
+html.mgi-metallic .text-primary {
+  background-image: var(--accent-metallic-surface);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+html[data-metallic="gold"] {
+  --ring: oklch(0.78 0.13 82);
+}
+html[data-metallic="platinum"] {
+  --ring: oklch(0.82 0.01 260);
+}
