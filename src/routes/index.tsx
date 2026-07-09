@@ -312,7 +312,11 @@ function ChatPage() {
   return (
     <div className="flex h-[100dvh] flex-col bg-background text-foreground">
       {/* Header */}
-      <header className="sticky top-0 z-20 flex items-center gap-2 border-b border-border bg-background/85 backdrop-blur px-3 py-2.5">
+      <header
+        className="sticky top-0 z-20 border-b border-border bg-background/85 backdrop-blur"
+        style={{ paddingTop: "env(safe-area-inset-top)" }}
+      >
+        <div className="flex h-12 items-center gap-1.5 px-2 sm:h-14 sm:gap-2 sm:px-3">
         <button
           onClick={() => setSidebarOpen(true)}
           className="grid h-9 w-9 shrink-0 place-items-center rounded-lg hover:bg-muted"
@@ -321,12 +325,12 @@ function ChatPage() {
           <Menu className="h-5 w-5" />
         </button>
         <div className="flex min-w-0 flex-1 items-center gap-2">
-          <MgiLogo size={26} />
-          <div className="min-w-0">
+          <MgiLogo size={24} className="shrink-0" />
+          <div className="min-w-0 flex-1">
             <div className="truncate text-sm font-semibold leading-tight">
               {active?.title ?? "Monty's GLM Interface"}
             </div>
-            <div className="truncate text-[11px] text-muted-foreground">
+            <div className="truncate text-[10px] leading-tight text-muted-foreground">
               {settings.model} · {settings.routingMode}
             </div>
           </div>
@@ -347,7 +351,9 @@ function ChatPage() {
         >
           <SettingsIcon className="h-5 w-5" />
         </Link>
+        </div>
       </header>
+
 
       {/* Warnings */}
       {(bigContext || bigOutput || !hasKey || bigAttachments || pendingImageOnTextModel || pendingPdfOnNoPdfModel) && (
@@ -376,7 +382,8 @@ function ChatPage() {
       )}
 
       {/* Messages */}
-      <div ref={listRef} className="mgi-scroll flex-1 overflow-y-auto px-3 py-4">
+      <div ref={listRef} className="mgi-scroll flex-1 overflow-y-auto px-3 py-3 sm:py-4">
+
         {!active || active.messages.length === 0 ? (
           <EmptyState onPick={(t) => setInput(t)} />
         ) : (
@@ -576,10 +583,11 @@ function deriveTitle(text: string): string {
 
 function EmptyState({ onPick: _onPick }: { onPick: (t: string) => void }) {
   return (
-    <div className="mx-auto flex max-w-md flex-col items-center gap-5 pt-10 text-center">
-      <MgiLogo size={72} />
+    <div className="mx-auto flex max-w-md flex-col items-center gap-3 pt-6 text-center sm:gap-5 sm:pt-10">
+      <MgiLogo size={56} className="sm:hidden" />
+      <MgiLogo size={72} className="hidden sm:block" />
       <div>
-        <h1 className="font-display text-2xl font-bold tracking-tight">
+        <h1 className="font-display text-xl font-bold tracking-tight sm:text-2xl">
           Monty's GLM Interface
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
@@ -589,6 +597,7 @@ function EmptyState({ onPick: _onPick }: { onPick: (t: string) => void }) {
     </div>
   );
 }
+
 
 interface BubbleProps {
   m: ChatMessage;
