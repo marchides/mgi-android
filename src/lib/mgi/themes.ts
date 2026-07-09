@@ -47,6 +47,9 @@ export const ACCENTS: AccentDef[] = [
   { name: "red", label: "Red", light: "0.58 0.24 25", dark: "0.68 0.24 25", onAccent: "1 0 0" },
   { name: "emerald", label: "Emerald", light: "0.62 0.16 155", dark: "0.72 0.16 155", onAccent: "1 0 0" },
   { name: "lime", label: "Lime", light: "0.82 0.2 130", dark: "0.86 0.2 130", onAccent: "0.15 0.02 130" },
+  { name: "mango", label: "Mango", light: "0.78 0.18 55", dark: "0.82 0.18 55", onAccent: "0.18 0.03 55" },
+  { name: "periwinkle", label: "Periwinkle", light: "0.72 0.12 255", dark: "0.78 0.12 255", onAccent: "0.18 0.03 255" },
+  { name: "mono", label: "Mono", light: "0.18 0 0", dark: "0.96 0 0", onAccent: "1 0 0" },
   {
     name: "gold",
     label: "Gold",
