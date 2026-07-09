@@ -86,6 +86,64 @@ export default defineConfig({
         ...p,
         applyToEnvironment: (env: { name: string }) => env.name === "client",
       })),
+      // Belt-and-braces: also emit `dist/client/sw.js` ourselves. Vite 8's
+      // multi-environment build resolves vite-plugin-pwa's `configResolved`
+      // against the ssr environment last, which flips `build.ssr` to true
+      // and makes its own `closeBundle` skip generating the service worker.
+      // Running workbox-build directly after the client bundle closes
+      // guarantees `sw.js` lands next to `index.html` for the PWA and for
+      // the Capacitor Android wrapper.
+      swPostBuildPlugin(),
     ],
   },
 });
+
+function swPostBuildPlugin(): Plugin {
+  return {
+    name: "mgi-sw-post-build",
+    apply: "build",
+    applyToEnvironment: (env: { name: string }) => env.name === "client",
+    async closeBundle() {
+      const outDir = "dist/client";
+      try {
+        await generateSW({
+          swDest: `${outDir}/sw.js`,
+          globDirectory: outDir,
+          globPatterns: ["**/*.{js,css,html,ico,png,svg,webmanifest,woff2}"],
+          navigateFallback: "/index.html",
+          navigateFallbackDenylist: [/^\/~oauth/, /^\/api\//],
+          cleanupOutdatedCaches: true,
+          clientsClaim: false,
+          skipWaiting: false,
+          runtimeCaching: [
+            {
+              urlPattern: ({ request, sameOrigin }: { request: Request; sameOrigin: boolean }) =>
+                sameOrigin && request.mode === "navigate",
+              handler: "NetworkFirst",
+              options: {
+                cacheName: "mgi-html",
+                networkTimeoutSeconds: 4,
+              },
+            },
+            {
+              urlPattern: ({ url, sameOrigin }: { url: URL; sameOrigin: boolean }) =>
+                sameOrigin &&
+                /\.(?:js|css|woff2|png|svg|ico|webmanifest)$/.test(url.pathname),
+              handler: "CacheFirst",
+              options: {
+                cacheName: "mgi-assets",
+                expiration: {
+                  maxEntries: 100,
+                  maxAgeSeconds: 60 * 60 * 24 * 30,
+                },
+              },
+            },
+          ],
+        });
+      } catch (err) {
+        // Non-fatal: the app still runs without the offline shell.
+        console.warn("[mgi] workbox generateSW failed:", err);
+      }
+    },
+  };
+}
