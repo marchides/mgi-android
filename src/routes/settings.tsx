@@ -326,6 +326,68 @@ function SettingsPage() {
           </div>
         </Card>
 
+        {/* Attachments */}
+        <Card
+          title="Attachments"
+          description="File uploads are sent only to OpenRouter when you send the message."
+        >
+          <label className="flex items-center justify-between gap-3 rounded-lg border border-border bg-card px-3 py-2 text-sm">
+            <span>Enable attachments</span>
+            <input
+              type="checkbox"
+              checked={settings.enableAttachments}
+              onChange={(e) => update({ enableAttachments: e.target.checked })}
+              className="h-4 w-4 accent-primary"
+            />
+          </label>
+          <label className="flex items-center justify-between gap-3 rounded-lg border border-border bg-card px-3 py-2 text-sm">
+            <span>
+              Save attachments in chat history
+              <span className="block text-[11px] text-muted-foreground">
+                Stores file data in localStorage. Off by default.
+              </span>
+            </span>
+            <input
+              type="checkbox"
+              checked={settings.saveAttachmentsInHistory}
+              onChange={(e) => update({ saveAttachmentsInHistory: e.target.checked })}
+              className="h-4 w-4 accent-primary"
+            />
+          </label>
+          <label className="flex items-center justify-between gap-3 rounded-lg border border-border bg-card px-3 py-2 text-sm">
+            <span>Warn before sending large attachments</span>
+            <input
+              type="checkbox"
+              checked={settings.warnLargeAttachments}
+              onChange={(e) => update({ warnLargeAttachments: e.target.checked })}
+              className="h-4 w-4 accent-primary"
+            />
+          </label>
+          <NumberField
+            label={`Max attachment size (MB): ${Math.round(settings.maxAttachmentBytes / (1024 * 1024))}`}
+            value={Math.round(settings.maxAttachmentBytes / (1024 * 1024))}
+            min={1}
+            max={100}
+            step={1}
+            onChange={(v) => update({ maxAttachmentBytes: Math.max(1, v) * 1024 * 1024 })}
+          />
+          <div>
+            <div className="mb-1 text-xs font-medium text-muted-foreground">
+              Preferred vision model
+            </div>
+            <input
+              value={settings.visionModel}
+              onChange={(e) => update({ visionModel: e.target.value })}
+              placeholder="z-ai/glm-5v-turbo"
+              className="w-full rounded-lg border border-border bg-input/40 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring font-mono"
+            />
+            <p className="pt-1 text-[11px] text-muted-foreground">
+              Used when you attach an image to a text-only model.
+            </p>
+          </div>
+        </Card>
+
+
         <div className="py-6 text-center text-[11px] text-muted-foreground">
           Monty's GLM Interface · MGI v1.0
         </div>
