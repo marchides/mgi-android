@@ -1,43 +1,104 @@
 # Monty's GLM Interface (MGI)
 
-A polished mobile-first PWA chat client for **GLM models via OpenRouter**, using your own API key.
+A polished mobile-first **PWA** chat client for **GLM models via OpenRouter**, built on TanStack Start + React. Not Expo, not React Native — a real web app engineered to install cleanly on Android and later wrap into a Play Store `.aab` via Capacitor.
 
 ## Features
 
 - Chat with `z-ai/glm-5.2` (default), `glm-5.2:floor`, `glm-5.1`, `glm-4.6`, or any custom OpenRouter model ID.
 - Routing modes: **Balanced**, **Cheapest** (`sort: price`, price caps), **Fastest** (`sort: throughput`).
-- Full model parameter control: temperature, top_p, top_k, frequency/presence/repetition penalty, reasoning effort (high / x-high), include-reasoning toggle.
-- Dynamic max-output-token calculation up to the 1,048,576-token context window (Short / Normal / Long / Huge / Extreme / **Max Possible**).
-- Conversation history, rename, delete, search, clear, copy, regenerate, edit-and-resubmit, stop generation.
+- Full model parameter control: temperature, top_p, top_k, frequency/presence/repetition penalty, reasoning effort, include-reasoning toggle.
+- Dynamic max-output-token calculation up to the 1,048,576-token context window.
+- Conversation history: rename, delete, search, clear, copy, regenerate, edit-and-resubmit, stop generation.
 - Streaming responses, markdown + code blocks with copy button.
 - History modes: full / recent N / auto-trim.
 - Optional system prompt.
 - Light & dark themes + 7 accent colors, system-mode auto-switch.
-- API key stored **locally on device only** (localStorage). Never logged, never sent anywhere except OpenRouter.
-- Installable PWA: works offline shell, "Add to Home Screen" on Android/iOS.
+- Mobile safe-area + keyboard-safe bottom input.
+- API key stored **locally on device only** (`localStorage`). Never logged, never sent anywhere except `openrouter.ai`.
+- Installable PWA with proper manifest, standalone display, portrait orientation, Z.ai-based icon.
 
-## Run
+## Run locally
 
 ```bash
-bun install
-bun run dev
+npm install
+npm run dev
 ```
 
 Open in a mobile browser or use device emulation.
 
-## Add your API key
+## Build
+
+```bash
+npm run build
+```
+
+Outputs a static-hostable web app. Deploy to any static host (Vercel, Netlify, Cloudflare Pages, etc.). Serve over HTTPS so the PWA install prompt and (future) Capacitor wrapping work.
+
+## Add your OpenRouter API key
 
 1. Get a key at https://openrouter.ai/keys
 2. Open **Settings** in MGI
 3. Paste the key, tap **Verify**, then **Save**
 
-## Ship to Android
+All OpenRouter calls are centralized in `src/lib/mgi/openrouter.ts`. No backend, no server-side dependency, no hardcoded keys, no external secrets.
 
-Two supported paths:
+## Architecture notes for future Capacitor wrapping
 
-### 1. Trusted Web Activity (Play Store)
+- Every network call to OpenRouter goes through one file: `src/lib/mgi/openrouter.ts`.
+- The API key is read/written in exactly one place: `src/lib/mgi/store.ts` (`useSettings`). To swap `localStorage` for **Capacitor Preferences** or **Secure Storage**, replace the two `localStorage.getItem/setItem` calls that touch `mgi:settings:v1` with the Capacitor Preferences equivalents. No component code changes.
+- Layout uses `env(safe-area-inset-bottom)` and sticky positioning — no assumptions about a desktop viewport.
+- No cookies, no server sessions, no environment variables required at runtime.
 
-Publish the PWA, then wrap with [Bubblewrap](https://github.com/GoogleChromeLabs/bubblewrap):
+## Android Play Store Build Path
+
+Target config (change to match your Play Console listing):
+
+| Field | Value |
+| --- | --- |
+| App name | `Monty's GLM Interface` |
+| Android package ID | `com.monty.glminterface` |
+| Version name | `1.0.0` |
+| Version code | `1` |
+
+A ready-to-use `capacitor.config.ts` is included at the project root with these placeholders.
+
+Steps:
+
+```bash
+# 1. Install deps and build the web bundle
+npm install
+npm run build
+
+# 2. Add Capacitor + Android platform
+npm install @capacitor/core @capacitor/cli @capacitor/android
+npx cap add android
+
+# 3. Sync the built web assets into the Android project
+npx cap sync android
+
+# 4. Open Android Studio
+npx cap open android
+```
+
+In Android Studio:
+
+1. Wait for Gradle sync to finish.
+2. Set the **Application ID** to `com.monty.glminterface` (already wired via `capacitor.config.ts`) and confirm `versionName` / `versionCode` in `android/app/build.gradle`.
+3. **Build → Generate Signed Bundle / APK → Android App Bundle**.
+4. Create or select a keystore, fill in the passwords, and pick the `release` variant.
+5. Android Studio produces `android/app/release/app-release.aab`.
+
+Upload the `.aab`:
+
+1. Sign in to **Google Play Console** → your app → **Production** (or Internal testing).
+2. **Create new release** → upload `app-release.aab`.
+3. Fill in release notes, save, review, and roll out.
+
+Each subsequent release: bump `versionCode` (integer, must strictly increase) and `versionName` in both `capacitor.config.ts` and `android/app/build.gradle`, then re-run `npm run build && npx cap sync android` before rebuilding the bundle.
+
+## Alternative: Trusted Web Activity (Bubblewrap)
+
+If you'd rather ship the hosted PWA as a Play Store app without Capacitor:
 
 ```bash
 npm i -g @bubblewrap/cli
@@ -47,22 +108,9 @@ bubblewrap build
 
 Upload the resulting `.aab` to Play Console.
 
-### 2. Capacitor (native shell)
-
-```bash
-bun add @capacitor/core @capacitor/cli @capacitor/android
-bunx cap init "MGI" "com.monty.mgi" --web-dir=dist
-bun run build
-bunx cap add android
-bunx cap sync android
-bunx cap open android
-```
-
-Then build a signed APK/AAB from Android Studio.
-
 ## Security
 
 - The OpenRouter API key lives only in `localStorage` under `mgi:settings:v1`.
-- The key is included only in `Authorization: Bearer …` headers to `openrouter.ai`.
+- The key is sent only as `Authorization: Bearer …` to `openrouter.ai`.
 - No analytics, no backend, no telemetry.
-- Do not commit `.env` files — none are required.
+- No `.env` files are required or committed.
