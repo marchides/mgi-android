@@ -654,7 +654,18 @@ function MessageBubble({
             </div>
           </div>
         ) : isUser ? (
-          <p className="mgi-user-bubble whitespace-pre-wrap">{m.content}</p>
+          <div className="flex flex-col gap-2">
+            {m.content && (
+              <p className="mgi-user-bubble whitespace-pre-wrap">{m.content}</p>
+            )}
+            {m.attachments && m.attachments.length > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                {m.attachments.map((a) => (
+                  <AttachmentChip key={a.id} a={a} compact />
+                ))}
+              </div>
+            )}
+          </div>
         ) : (
           <>
             {m.reasoning && (
