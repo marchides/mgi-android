@@ -584,8 +584,12 @@ function deriveTitle(text: string): string {
 function EmptyState({ onPick: _onPick }: { onPick: (t: string) => void }) {
   return (
     <div className="mx-auto flex max-w-md flex-col items-center gap-3 pt-6 text-center sm:gap-5 sm:pt-10">
-      <MgiLogo size={56} className="sm:hidden" />
-      <MgiLogo size={72} className="hidden sm:block" />
+      <span className="sm:hidden">
+        <MgiLogo size={56} />
+      </span>
+      <span className="hidden sm:block">
+        <MgiLogo size={72} />
+      </span>
       <div>
         <h1 className="font-display text-xl font-bold tracking-tight sm:text-2xl">
           Monty's GLM Interface
