@@ -20,8 +20,7 @@ import {
 import { toast } from "sonner";
 import { MgiLogo } from "@/components/mgi/MgiLogo";
 import { MarkdownMessage } from "@/components/mgi/MarkdownMessage";
-import { useSettings as useSettingsHook, useConversations } from "@/lib/mgi/store";
-import { useSettings } from "@/lib/mgi/store";
+import { useConversations, useSettings } from "@/lib/mgi/store";
 import type { Attachment, ChatMessage, Conversation } from "@/lib/mgi/types";
 import {
   buildOpenRouterBody,
