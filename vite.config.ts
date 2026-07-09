@@ -8,13 +8,15 @@ import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 import { VitePWA } from "vite-plugin-pwa";
 
 export default defineConfig({
+  // Static build: no runtime Nitro/Node server. TanStack Start's SPA
+  // prerender emits `dist/client/index.html`, and the client bundle is
+  // fully self-contained. Capacitor's Android WebView loads that folder.
+  nitro: false,
   tanstackStart: {
     // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
     server: { entry: "server" },
-    // SPA mode: prerender a single shell HTML at `dist/client/index.html` and
-    // let the client router take over for all other paths at runtime. This
-    // gives the Capacitor Android wrapper a real static entry point while
-    // keeping the app fully client-side (no Node/SSR server required to run).
+    // SPA mode: prerender a single shell HTML at `dist/client/index.html`
+    // and let the client router take over for all other paths at runtime.
     spa: {
       enabled: true,
       maskPath: "/",
