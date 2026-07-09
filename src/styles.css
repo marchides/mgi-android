@@ -132,6 +132,19 @@
   font-family: var(--font-code);
 }
 
+/* App headings & bold headers (UI only — chat prose is overridden below). */
+h1, h2, h3, h4, h5, h6,
+.font-display {
+  font-family: var(--font-display);
+  letter-spacing: -0.01em;
+}
+/* Chat surfaces keep Sansation even for headings/strong inside markdown. */
+.mgi-prose h1, .mgi-prose h2, .mgi-prose h3,
+.mgi-prose h4, .mgi-prose h5, .mgi-prose h6,
+.mgi-user-bubble {
+  font-family: var(--font-chat);
+}
+
 @utility mgi-scroll {
   scrollbar-width: thin;
   scrollbar-color: color-mix(in oklab, var(--color-muted-foreground) 30%, transparent) transparent;
