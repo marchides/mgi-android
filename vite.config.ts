@@ -6,6 +6,8 @@
 // You can pass additional config via defineConfig({ vite: { ... }, etc... }) if needed.
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 import { VitePWA } from "vite-plugin-pwa";
+import { generateSW } from "workbox-build";
+import type { Plugin } from "vite";
 
 export default defineConfig({
   // Static build: no runtime Nitro/Node server. TanStack Start's SPA
