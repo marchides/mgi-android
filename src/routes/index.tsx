@@ -90,29 +90,97 @@ function ChatPage() {
   };
 
   const hasKey = settings.apiKey.trim().length > 0;
+  const capability = getCapability(settings.model);
+  const totalPendingBytes = pendingAtts.reduce((n, a) => n + a.size, 0);
+  const pendingImageOnTextModel =
+    capability.known &&
+    !capability.cap.image &&
+    pendingAtts.some((a) => a.kind === "image" && !a.error);
+  const pendingPdfOnNoPdfModel =
+    capability.known &&
+    !capability.cap.pdf &&
+    pendingAtts.some((a) => a.kind === "pdf" && !a.error);
 
   // ---- Warnings ----
-  const inputTokensEstimate = active
-    ? estimateMessagesTokens(settings.systemPrompt, active.messages)
-    : estimateMessagesTokens(settings.systemPrompt, []);
+  const attachmentTextTokens = estimateAttachmentsTokens(pendingAtts);
+  const inputTokensEstimate =
+    (active
+      ? estimateMessagesTokens(settings.systemPrompt, active.messages)
+      : estimateMessagesTokens(settings.systemPrompt, [])) + attachmentTextTokens;
   const bigContext = inputTokensEstimate > 200_000;
   const bigOutput =
     settings.params.max_output_tokens !== "max" &&
     (settings.params.max_output_tokens as number) > 65_536;
+  const bigAttachments =
+    settings.warnLargeAttachments && totalPendingBytes > 5 * 1024 * 1024;
+
+  // ---- Attachments ----
+  async function onPickFiles(files: FileList | null) {
+    if (!files || files.length === 0) return;
+    if (!settings.enableAttachments) {
+      toast.error("Attachments are disabled in Settings.");
+      return;
+    }
+    const incoming: Attachment[] = [];
+    for (const file of Array.from(files)) {
+      if (!isFileSupported(file)) {
+        toast.error(`${file.name}: unsupported file type.`);
+        continue;
+      }
+      const att = await readAttachment(file, settings.maxAttachmentBytes);
+      if (att.error) toast.error(`${att.name}: ${att.error}`);
+      incoming.push(att);
+    }
+    setPendingAtts((prev) => [...prev, ...incoming]);
+  }
+
+  function removePending(id: string) {
+    setPendingAtts((prev) => prev.filter((a) => a.id !== id));
+  }
+
+  function switchToVisionModel() {
+    update({ model: settings.visionModel });
+    toast.success(`Switched to ${settings.visionModel}`);
+  }
 
   // ---- Send / stream ----
-  async function sendMessage(text: string) {
-    if (!text.trim()) return;
+  async function sendMessage(text: string, attachments: Attachment[] = []) {
+    const trimmedText = text.trim();
+    if (!trimmedText && attachments.length === 0) return;
     if (!hasKey) {
       toast.error("Add your OpenRouter API key in Settings.");
       return;
     }
+
+    // Model capability gate for images.
+    if (attachments.some((a) => a.kind === "image" && !a.error)) {
+      const { cap, known } = getCapability(settings.model);
+      if (known && !cap.image) {
+        toast.error(
+          "This model doesn't support image input. Switch to a vision model?",
+          {
+            action: {
+              label: `Use ${settings.visionModel}`,
+              onClick: switchToVisionModel,
+            },
+          },
+        );
+        return;
+      }
+      if (!known) {
+        toast.warning(
+          "Model capability unknown — sending image anyway. It may be rejected.",
+        );
+      }
+    }
+
     const conv = ensureConversation();
     const userMsg: ChatMessage = {
       id: crypto.randomUUID(),
       role: "user",
-      content: text.trim(),
+      content: trimmedText,
       createdAt: Date.now(),
+      attachments: attachments.length ? attachments : undefined,
     };
     const assistantMsg: ChatMessage = {
       id: crypto.randomUUID(),
@@ -122,10 +190,14 @@ function ChatPage() {
     };
     updateConversation(conv.id, (c) => ({
       ...c,
-      title: c.messages.length === 0 ? deriveTitle(text) : c.title,
+      title:
+        c.messages.length === 0
+          ? deriveTitle(trimmedText || attachments[0]?.name || "New chat")
+          : c.title,
       messages: [...c.messages, userMsg, assistantMsg],
     }));
     setInput("");
+    setPendingAtts([]);
     setStreamingId(assistantMsg.id);
 
     const history = [...conv.messages, userMsg];
@@ -136,6 +208,21 @@ function ChatPage() {
 
     let acc = "";
     let reasoning = "";
+    const finalizeAttachments = () => {
+      if (settings.saveAttachmentsInHistory || attachments.length === 0) return;
+      updateConversation(conv.id, (c) => ({
+        ...c,
+        messages: c.messages.map((m) =>
+          m.id === userMsg.id
+            ? {
+                ...m,
+                attachments: m.attachments?.map(stripAttachmentPayload),
+              }
+            : m,
+        ),
+      }));
+    };
+
     await streamChatCompletion(settings.apiKey, body, {
       signal: ac.signal,
       onDelta: (t) => {
@@ -165,6 +252,7 @@ function ChatPage() {
         }));
       },
       onDone: () => {
+        finalizeAttachments();
         setStreamingId(null);
         abortRef.current = null;
       },
@@ -177,6 +265,7 @@ function ChatPage() {
               : m,
           ),
         }));
+        finalizeAttachments();
         setStreamingId(null);
         abortRef.current = null;
         toast.error(err.message);
