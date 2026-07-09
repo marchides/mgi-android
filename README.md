@@ -32,15 +32,18 @@ Open in a mobile browser or use device emulation.
 npm run build
 ```
 
-TanStack Start emits an SSR-capable bundle under `dist/`:
+MGI builds to a **fully static** client-side app — no Node/SSR server at runtime:
 
 | Path | Contents |
 | --- | --- |
-| `dist/client/` | Hashed JS/CSS, `manifest.webmanifest`, `icon.png`, `_headers` |
-| `dist/server/` | Nitro SSR entry (renders HTML per request) |
-| `dist/sw.js`, `dist/workbox-*.js` | Guarded service worker for the PWA shell |
+| `dist/client/index.html` | Prerendered SPA shell (TanStack Start SPA mode) |
+| `dist/client/assets/` | Hashed JS/CSS bundles |
+| `dist/client/manifest.webmanifest`, `dist/client/icon.png` | PWA manifest + icon |
+| `dist/client/sw.js`, `dist/client/workbox-*.js` | Precached service worker for the offline shell |
+| `dist/server/` | Build-time byproduct used only to prerender the shell. **Not deployed.** |
 
-Deploy the whole `dist/` tree to any Nitro-compatible host (Cloudflare Pages / Workers, Vercel, Netlify, Node). Serve over HTTPS so the PWA install prompt (and Capacitor wrapping) work. There is **no** standalone static `index.html` — the SSR entry produces HTML at request time.
+Deploy `dist/client/` to any static host (Cloudflare Pages, Vercel, Netlify, GitHub Pages, S3, nginx). Serve over HTTPS so the PWA install prompt (and Capacitor wrapping) work.
+
 
 
 ## Add your OpenRouter API key
@@ -109,29 +112,24 @@ A ready-to-use `capacitor.config.ts` is included at the project root with these 
 
 ### Which webDir?
 
-TanStack Start's `npm run build` produces `dist/client/` (assets + PWA manifest) and `dist/server/` (SSR entry). There is **no static `index.html`** in `dist/client/`, so pointing Capacitor's WebView straight at the bundled files will show a blank page. Choose one:
-
-- **(Recommended) Hosted WebView** — deploy `dist/` to Cloudflare Pages / Vercel / Netlify, then set `server.url` in `capacitor.config.ts` to your deployed HTTPS URL. Capacitor loads the SSR-rendered app inside the WebView; `webDir: "dist/client"` is kept only so Capacitor tooling can find your icons and manifest.
-- **Fully-offline wrap** — add a prerender step that emits a static `index.html` (and per-route HTML) into `dist/client/`, then leave `server.url` unset. This path is not wired by default because MGI's runtime is client-only and hosting is trivial.
+`webDir` is set to `dist/client` in `capacitor.config.ts`. That folder is produced by `npm run build` and contains a real static `index.html` (prerendered SPA shell), hashed assets, PWA manifest, icon, and precached service worker — everything the Android WebView needs to run MGI fully offline. No `server.url` is required.
 
 Steps:
 
 ```bash
-# 1. Install deps and build the web bundle
+# 1. Install deps and build the static web bundle
 npm install
 npm run build
+# → produces dist/client/ (index.html, assets/, manifest.webmanifest, icon.png, sw.js)
 
-# 2. Deploy dist/ to a static/edge host and note the HTTPS URL,
-#    then set server.url in capacitor.config.ts to that URL.
-
-# 3. Add Capacitor + Android platform
+# 2. Add Capacitor + Android platform
 npm install @capacitor/core @capacitor/cli @capacitor/android
 npx cap add android
 
-# 4. Sync the built web assets into the Android project
+# 3. Sync the built web assets into the Android project
 npx cap sync android
 
-# 5. Open Android Studio
+# 4. Open Android Studio
 npx cap open android
 ```
 
