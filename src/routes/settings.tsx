@@ -1,11 +1,28 @@
 import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeft, Check, Eye, EyeOff, Loader2, Trash2 } from "lucide-react";
+import {
+  ArrowLeft,
+  Check,
+  Download,
+  Eye,
+  EyeOff,
+  FileText,
+  Loader2,
+  Trash2,
+  Upload,
+} from "lucide-react";
 import { toast } from "sonner";
 import { MgiLogo } from "@/components/mgi/MgiLogo";
-import { useSettings } from "@/lib/mgi/store";
+import { useConversations, useSettings } from "@/lib/mgi/store";
 import { verifyApiKey } from "@/lib/mgi/openrouter";
 import { ACCENTS } from "@/lib/mgi/themes";
+import {
+  clearAllLocalData,
+  exportAllConversationsJSON,
+  exportConversationMarkdown,
+  importConversationsJSON,
+  pickJSONFile,
+} from "@/lib/mgi/backup";
 import type {
   AccentName,
   HistoryMode,
@@ -25,9 +42,53 @@ export const Route = createFileRoute("/settings")({
 
 function SettingsPage() {
   const { settings, update, updateParams } = useSettings();
+  const { conversations, activeId } = useConversations();
   const [showKey, setShowKey] = useState(false);
   const [verifying, setVerifying] = useState(false);
   const [customModel, setCustomModel] = useState("");
+  const activeConversation = conversations.find((c) => c.id === activeId) ?? conversations[0];
+
+  async function onExportAll() {
+    try {
+      const n = exportAllConversationsJSON();
+      toast.success(`Exported ${n} chat${n === 1 ? "" : "s"}.`);
+    } catch (e) {
+      toast.error(`Export failed: ${(e as Error).message}`);
+    }
+  }
+
+  async function onImport(mode: "merge" | "replace") {
+    try {
+      if (mode === "replace" && !confirm(
+        "Replace ALL local chats with the imported file? This cannot be undone.",
+      )) return;
+      const text = await pickJSONFile();
+      if (!text) return;
+      const res = importConversationsJSON(text, mode);
+      toast.success(`Imported ${res.imported} chat${res.imported === 1 ? "" : "s"} (${res.total} total).`);
+    } catch (e) {
+      toast.error(`Import failed: ${(e as Error).message}`);
+    }
+  }
+
+  function onExportCurrentMd() {
+    if (!activeConversation || activeConversation.messages.length === 0) {
+      toast.error("No active chat to export.");
+      return;
+    }
+    exportConversationMarkdown(activeConversation);
+    toast.success("Chat exported as Markdown.");
+  }
+
+  function onClearAll() {
+    if (!confirm(
+      "This will permanently delete ALL local MGI data on this device:\n\n• Every chat and message\n• Your API key\n• Theme, model, and all settings\n\nExport your chats first if you want to keep them. This cannot be undone. Continue?",
+    )) return;
+    if (!confirm("Are you absolutely sure? This cannot be undone.")) return;
+    clearAllLocalData();
+    toast.success("All local MGI data cleared.");
+    setTimeout(() => window.location.reload(), 600);
+  }
 
   async function onVerify() {
     setVerifying(true);
