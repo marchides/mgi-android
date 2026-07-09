@@ -571,13 +571,29 @@ function ChatPage() {
                     setActiveId(c.id);
                     setSidebarOpen(false);
                   }}
-                  onRename={(t) => renameConversation(c.id, t)}
-                  onDelete={() => deleteConversation(c.id)}
+                  onRename={() => setRenameTarget(c)}
+                  onDelete={() => {
+                    if (confirm(`Delete "${c.title?.trim() || "Untitled conversation"}"? This cannot be undone.`)) {
+                      deleteConversation(c.id);
+                    }
+                  }}
                 />
               ))}
             </div>
           </aside>
         </div>
+      )}
+
+      {/* Rename dialog */}
+      {renameTarget && (
+        <RenameDialog
+          initial={renameTarget.title}
+          onCancel={() => setRenameTarget(null)}
+          onSave={(t) => {
+            renameConversation(renameTarget.id, t);
+            setRenameTarget(null);
+          }}
+        />
       )}
     </div>
   );
