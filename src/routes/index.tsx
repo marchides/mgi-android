@@ -790,3 +790,79 @@ function ConversationRow({
     </div>
   );
 }
+
+function AttachmentStrip({
+  atts,
+  onRemove,
+  onClearAll,
+}: {
+  atts: Attachment[];
+  onRemove: (id: string) => void;
+  onClearAll: () => void;
+}) {
+  return (
+    <div className="flex items-center gap-2 overflow-x-auto pb-1">
+      <div className="flex flex-1 flex-wrap gap-1.5">
+        {atts.map((a) => (
+          <AttachmentChip key={a.id} a={a} onRemove={() => onRemove(a.id)} />
+        ))}
+      </div>
+      {atts.length > 1 && (
+        <button
+          onClick={onClearAll}
+          className="shrink-0 rounded-full border border-border bg-card px-2 py-1 text-[11px] text-muted-foreground hover:bg-muted"
+        >
+          Clear all
+        </button>
+      )}
+    </div>
+  );
+}
+
+function AttachmentChip({
+  a,
+  onRemove,
+  compact,
+}: {
+  a: Attachment;
+  onRemove?: () => void;
+  compact?: boolean;
+}) {
+  const Icon = a.kind === "image" ? ImageIcon : FileText;
+  return (
+    <div
+      className={cn(
+        "inline-flex max-w-full items-center gap-2 rounded-lg border border-border bg-card px-2 py-1 text-xs",
+        compact && "bg-background/40",
+        a.error && "border-destructive/60",
+      )}
+      title={a.error ?? `${a.name} · ${humanSize(a.size)}`}
+    >
+      {a.kind === "image" && a.dataUrl ? (
+        <img
+          src={a.dataUrl}
+          alt=""
+          className="h-6 w-6 rounded object-cover"
+        />
+      ) : (
+        <Icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+      )}
+      <div className="min-w-0 leading-tight">
+        <div className="truncate max-w-[160px] font-medium">{a.name}</div>
+        <div className="text-[10px] text-muted-foreground">
+          {a.kind.toUpperCase()} · {humanSize(a.size)}
+          {a.error ? ` · ${a.error}` : ""}
+        </div>
+      </div>
+      {onRemove && (
+        <button
+          onClick={onRemove}
+          aria-label={`Remove ${a.name}`}
+          className="grid h-5 w-5 shrink-0 place-items-center rounded hover:bg-muted"
+        >
+          <X className="h-3 w-3" />
+        </button>
+      )}
+    </div>
+  );
+}
