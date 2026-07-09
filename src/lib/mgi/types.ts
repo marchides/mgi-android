@@ -34,7 +34,9 @@ export type AccentName =
   | "purple"
   | "red"
   | "emerald"
-  | "lime";
+  | "lime"
+  | "gold"
+  | "platinum";
 
 export interface ModelParameters {
   temperature: number;
