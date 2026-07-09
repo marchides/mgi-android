@@ -30,14 +30,20 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-display: "Space Grotesk", "Inter", sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  --font-sans: "Poppins", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-display: "Poppins", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 }
 
 /* Light mode */
 :root {
   --radius: 0.9rem;
+
+  /* Typography — UI vs. chat/content vs. code */
+  --font-ui: "Poppins", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-chat: "Sansation", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-code: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+
 
   /* Accent — mutated at runtime by ThemeController */
   --accent-oklch: 0.55 0.22 260;
@@ -100,7 +106,7 @@
   body {
     background: var(--color-background);
     color: var(--color-foreground);
-    font-family: var(--font-sans);
+    font-family: var(--font-ui);
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
   }
@@ -109,6 +115,21 @@
   button {
     font: inherit;
   }
+}
+
+/* Chat/content typography — Sansation for the actual conversation surface. */
+.mgi-chat-text,
+.mgi-composer textarea,
+.mgi-user-bubble,
+.mgi-prose {
+  font-family: var(--font-chat);
+}
+.mgi-prose code,
+.mgi-prose pre,
+.mgi-prose pre code,
+.mgi-user-bubble code,
+.mgi-user-bubble pre {
+  font-family: var(--font-code);
 }
 
 @utility mgi-scroll {

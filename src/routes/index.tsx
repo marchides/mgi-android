@@ -311,7 +311,7 @@ function ChatPage() {
       {/* Composer */}
       <div className="sticky bottom-0 z-10 border-t border-border bg-background/95 backdrop-blur px-3 pb-[max(env(safe-area-inset-bottom),0.5rem)] pt-2">
         <div className="mx-auto max-w-2xl">
-          <div className="flex items-end gap-2 rounded-2xl border border-border bg-card p-2 shadow-sm focus-within:ring-2 focus-within:ring-ring">
+          <div className="mgi-composer flex items-end gap-2 rounded-2xl border border-border bg-card p-2 shadow-sm focus-within:ring-2 focus-within:ring-ring">
             <button
               onClick={() => toast.info("Attachments coming soon.")}
               className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-muted-foreground hover:bg-muted"
@@ -334,6 +334,7 @@ function ChatPage() {
               className="mgi-scroll min-h-[38px] max-h-40 flex-1 resize-none bg-transparent px-1 py-2 text-[15px] outline-none placeholder:text-muted-foreground"
               style={{ lineHeight: 1.4 }}
             />
+
             <button
               onClick={() => sendMessage(input)}
               disabled={!hasKey || !input.trim() || !!streamingId}
@@ -427,13 +428,7 @@ function deriveTitle(text: string): string {
   return t.length ? t : "New chat";
 }
 
-function EmptyState({ onPick }: { onPick: (t: string) => void }) {
-  const suggestions = [
-    "Explain the difference between GLM-5.2 and GLM-4.6.",
-    "Write a Python function to debounce async calls.",
-    "Draft a tight product description for a smart home hub.",
-    "Summarise this text: …",
-  ];
+function EmptyState({ onPick: _onPick }: { onPick: (t: string) => void }) {
   return (
     <div className="mx-auto flex max-w-md flex-col items-center gap-5 pt-10 text-center">
       <MgiLogo size={72} />
@@ -444,17 +439,6 @@ function EmptyState({ onPick }: { onPick: (t: string) => void }) {
         <p className="mt-1 text-sm text-muted-foreground">
           Chat with GLM through your own OpenRouter key.
         </p>
-      </div>
-      <div className="grid w-full grid-cols-1 gap-2">
-        {suggestions.map((s) => (
-          <button
-            key={s}
-            onClick={() => onPick(s)}
-            className="rounded-xl border border-border bg-card px-3 py-3 text-left text-sm hover:bg-muted"
-          >
-            {s}
-          </button>
-        ))}
       </div>
     </div>
   );
@@ -524,7 +508,7 @@ function MessageBubble({
             </div>
           </div>
         ) : isUser ? (
-          <p className="whitespace-pre-wrap">{m.content}</p>
+          <p className="mgi-user-bubble whitespace-pre-wrap">{m.content}</p>
         ) : (
           <>
             {m.reasoning && (
