@@ -78,6 +78,12 @@ export interface AppSettings {
   themeMode: ThemeMode;
   accent: AccentName;
   keyStatus: "unknown" | "valid" | "invalid";
+  // Attachments
+  enableAttachments: boolean;
+  saveAttachmentsInHistory: boolean;
+  maxAttachmentBytes: number;
+  visionModel: string;
+  warnLargeAttachments: boolean;
 }
 
 export const MODEL_PRESETS: { id: string; label: string }[] = [
