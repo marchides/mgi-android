@@ -106,7 +106,7 @@
   body {
     background: var(--color-background);
     color: var(--color-foreground);
-    font-family: var(--font-sans);
+    font-family: var(--font-ui);
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
   }
@@ -115,6 +115,21 @@
   button {
     font: inherit;
   }
+}
+
+/* Chat/content typography — Sansation for the actual conversation surface. */
+.mgi-chat-text,
+.mgi-composer textarea,
+.mgi-user-bubble,
+.mgi-prose {
+  font-family: var(--font-chat);
+}
+.mgi-prose code,
+.mgi-prose pre,
+.mgi-prose pre code,
+.mgi-user-bubble code,
+.mgi-user-bubble pre {
+  font-family: var(--font-code);
 }
 
 @utility mgi-scroll {
