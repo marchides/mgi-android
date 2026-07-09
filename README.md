@@ -182,7 +182,22 @@ bubblewrap init --manifest https://<your-domain>/manifest.webmanifest
 bubblewrap build
 ```
 
-Upload the resulting `.aab` to Play Console.
+
+
+## Android visual test checklist
+
+Run through this after installing the built `.aab` on a real device:
+
+- [ ] Android status bar does not overlap the chat header
+- [ ] Android status bar does not overlap the settings header
+- [ ] Opening the conversation drawer does not cover the battery/time/status icons
+- [ ] Bottom composer sits above the on-screen nav / gesture bar
+- [ ] MGI logo appears on the empty chat screen
+- [ ] MGI logo appears in the settings header and the conversation drawer header
+- [ ] MGI logo appears in the installed Android launcher icon (from `public/icon.png`)
+- [ ] MGI logo still appears after a full app restart
+- [ ] MGI logo still appears with the device in airplane mode (bundled asset, not remote)
+
 
 ## Security
 
