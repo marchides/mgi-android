@@ -1,5 +1,5 @@
 {
-  "name": "tanstack_start_ts",
+  "name": "mgi-android",
   "private": true,
   "sideEffects": false,
   "type": "module",
@@ -9,7 +9,13 @@
     "build:dev": "vite build --mode development",
     "preview": "vite preview",
     "lint": "eslint .",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "android:install": "npm install @capacitor/core @capacitor/cli @capacitor/android && npm install --save-dev @capacitor/assets",
+    "android:add": "npm run build && npx cap add android",
+    "android:sync": "npm run build && npx cap sync android",
+    "android:open": "npx cap open android",
+    "android:run": "npm run android:sync && npx cap run android",
+    "android:assets": "npx capacitor-assets generate && npx cap sync android"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
