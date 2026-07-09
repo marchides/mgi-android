@@ -42,10 +42,46 @@ Outputs a static-hostable web app. Deploy to any static host (Vercel, Netlify, C
 
 All OpenRouter calls are centralized in `src/lib/mgi/openrouter.ts`. No backend, no server-side dependency, no hardcoded keys, no external secrets.
 
+## Offline behavior (PWA)
+
+MGI ships a guarded service worker via `vite-plugin-pwa`. It caches **only the app shell** (HTML, JS, CSS, icons, manifest) so you can still open the app offline and view:
+
+- saved conversations
+- settings, themes, model parameters
+- local history
+
+The service worker **never** caches:
+
+- OpenRouter API requests or responses
+- streaming chat completions
+- `Authorization` headers or API keys
+- any cross-origin request
+
+OpenRouter calls are always network-only (`cache: "no-store"`). If you're offline, `streamChatCompletion` short-circuits with **“You are offline. Chat requires internet.”** and a persistent banner appears at the top of the app.
+
+**Update behavior**: `registerType: "prompt"` — when a new build is deployed, a small **“Update available → Reload”** toast appears. Nothing auto-reloads, so a mid-generation chat is never killed. Add `?sw=off` to any URL to force-unregister the SW during debugging.
+
+**Preview safety**: the registration wrapper in `src/lib/mgi/pwa-register.ts` refuses to register in dev, inside iframes, on Lovable preview hosts, and when `?sw=off` is set. If `vite-plugin-pwa` ever causes trouble in this TanStack Start setup, delete the `VitePWA(...)` block from `vite.config.ts` and stop importing `registerServiceWorker` from `__root.tsx` — the app keeps working as a plain installable manifest-only PWA.
+
+## Replacing localStorage with Capacitor secure storage
+
+Every persistent value in MGI lives under one of three keys in `localStorage`:
+
+- `mgi:settings:v1` — includes the **OpenRouter API key**
+- `mgi:conversations:v1` — chat history
+- `mgi:active-conversation:v1` — currently open thread
+
+All reads/writes go through `src/lib/mgi/store.ts` (and the tiny adapter in `src/lib/mgi/secure-storage.ts`). To move to native storage after wrapping with Capacitor:
+
+1. `npm install @capacitor/preferences` (general values) and `@capacitor-community/secure-storage-plugin` (API key → Android Keystore).
+2. Replace the `window.localStorage.getItem/setItem/removeItem` calls in `src/lib/mgi/secure-storage.ts` with the async Capacitor equivalents (sketch in that file).
+3. Convert the two consumers in `src/lib/mgi/store.ts` to `async` — no component touches storage directly, so nothing else changes.
+4. For the API key alone, route through the secure-storage plugin so it lands in the Android Keystore rather than plain SharedPreferences.
+
 ## Architecture notes for future Capacitor wrapping
 
 - Every network call to OpenRouter goes through one file: `src/lib/mgi/openrouter.ts`.
-- The API key is read/written in exactly one place: `src/lib/mgi/store.ts` (`useSettings`). To swap `localStorage` for **Capacitor Preferences** or **Secure Storage**, replace the two `localStorage.getItem/setItem` calls that touch `mgi:settings:v1` with the Capacitor Preferences equivalents. No component code changes.
+- The API key is read/written in exactly one place: `src/lib/mgi/store.ts` (`useSettings`). See "Replacing localStorage" above.
 - Layout uses `env(safe-area-inset-bottom)` and sticky positioning — no assumptions about a desktop viewport.
 - No cookies, no server sessions, no environment variables required at runtime.
 
