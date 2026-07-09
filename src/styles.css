@@ -39,6 +39,12 @@
 :root {
   --radius: 0.9rem;
 
+  /* Typography — UI vs. chat/content vs. code */
+  --font-ui: "Poppins", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-chat: "Sansation", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-code: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+
+
   /* Accent — mutated at runtime by ThemeController */
   --accent-oklch: 0.55 0.22 260;
   --on-accent-oklch: 1 0 0;
