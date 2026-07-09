@@ -127,4 +127,9 @@ export const DEFAULT_SETTINGS: AppSettings = {
   themeMode: "system",
   accent: "cobalt",
   keyStatus: "unknown",
+  enableAttachments: true,
+  saveAttachmentsInHistory: false,
+  maxAttachmentBytes: 20 * 1024 * 1024,
+  visionModel: "z-ai/glm-5v-turbo",
+  warnLargeAttachments: true,
 };
