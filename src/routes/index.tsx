@@ -40,9 +40,9 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Monty's GLM Interface — MGI" },
+      { title: "Monty's GLM Interface" },
       { name: "description", content: "A mobile-first GLM chat client for OpenRouter." },
-      { property: "og:title", content: "Monty's GLM Interface — MGI" },
+      { property: "og:title", content: "Monty's GLM Interface" },
       { property: "og:description", content: "A mobile-first GLM chat client for OpenRouter." },
     ],
   }),
