@@ -314,7 +314,7 @@ function ChatPage() {
       {/* Header */}
       <header
         className="sticky top-0 z-20 border-b border-border bg-background/85 backdrop-blur"
-        style={{ paddingTop: "env(safe-area-inset-top)" }}
+        style={{ paddingTop: "var(--safe-top)" }}
       >
         <div className="flex h-12 items-center gap-1.5 px-2 sm:h-14 sm:gap-2 sm:px-3">
         <button
