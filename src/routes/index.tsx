@@ -508,7 +508,7 @@ function MessageBubble({
             </div>
           </div>
         ) : isUser ? (
-          <p className="whitespace-pre-wrap">{m.content}</p>
+          <p className="mgi-user-bubble whitespace-pre-wrap">{m.content}</p>
         ) : (
           <>
             {m.reasoning && (
