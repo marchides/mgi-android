@@ -3,6 +3,8 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   ArrowUp,
   Copy,
+  FileText,
+  ImageIcon,
   Menu,
   Paperclip,
   Pencil,
@@ -18,12 +20,21 @@ import {
 import { toast } from "sonner";
 import { MgiLogo } from "@/components/mgi/MgiLogo";
 import { MarkdownMessage } from "@/components/mgi/MarkdownMessage";
-import { useConversations, useSettings } from "@/lib/mgi/store";
-import type { ChatMessage, Conversation } from "@/lib/mgi/types";
+import { useSettings as useSettingsHook, useConversations } from "@/lib/mgi/store";
+import { useSettings } from "@/lib/mgi/store";
+import type { Attachment, ChatMessage, Conversation } from "@/lib/mgi/types";
 import {
   buildOpenRouterBody,
+  estimateAttachmentsTokens,
   streamChatCompletion,
 } from "@/lib/mgi/openrouter";
+import {
+  humanSize,
+  isFileSupported,
+  readAttachment,
+  stripAttachmentPayload,
+} from "@/lib/mgi/attachments";
+import { getCapability } from "@/lib/mgi/models";
 import { estimateMessagesTokens } from "@/lib/mgi/tokens";
 import { cn } from "@/lib/utils";
 
