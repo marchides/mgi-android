@@ -31,7 +31,7 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
   --font-sans: "Poppins", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --font-display: "Poppins", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: "Science Gothic", "Poppins", system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 }
 
@@ -130,6 +130,19 @@
 .mgi-user-bubble code,
 .mgi-user-bubble pre {
   font-family: var(--font-code);
+}
+
+/* App headings & bold headers (UI only — chat prose is overridden below). */
+h1, h2, h3, h4, h5, h6,
+.font-display {
+  font-family: var(--font-display);
+  letter-spacing: -0.01em;
+}
+/* Chat surfaces keep Sansation even for headings/strong inside markdown. */
+.mgi-prose h1, .mgi-prose h2, .mgi-prose h3,
+.mgi-prose h4, .mgi-prose h5, .mgi-prose h6,
+.mgi-user-bubble {
+  font-family: var(--font-chat);
 }
 
 @utility mgi-scroll {
