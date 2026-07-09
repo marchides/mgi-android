@@ -428,12 +428,36 @@ function ChatPage() {
 
       {/* Composer */}
       <div className="sticky bottom-0 z-10 border-t border-border bg-background/95 backdrop-blur px-3 pb-[max(env(safe-area-inset-bottom),0.5rem)] pt-2">
-        <div className="mx-auto max-w-2xl">
+        <div className="mx-auto max-w-2xl space-y-2">
+          {pendingAtts.length > 0 && (
+            <AttachmentStrip
+              atts={pendingAtts}
+              onRemove={removePending}
+              onClearAll={() => setPendingAtts([])}
+            />
+          )}
           <div className="mgi-composer flex items-end gap-2 rounded-2xl border border-border bg-card p-2 shadow-sm focus-within:ring-2 focus-within:ring-ring">
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              className="hidden"
+              accept="image/png,image/jpeg,image/webp,application/pdf,text/*,.md,.json,.csv,.html,.css,.js,.jsx,.ts,.tsx,.py"
+              onChange={(e) => {
+                void onPickFiles(e.target.files);
+                e.target.value = "";
+              }}
+            />
             <button
-              onClick={() => toast.info("Attachments coming soon.")}
+              onClick={() => {
+                if (!settings.enableAttachments) {
+                  toast.error("Attachments are disabled in Settings.");
+                  return;
+                }
+                fileInputRef.current?.click();
+              }}
               className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-muted-foreground hover:bg-muted"
-              aria-label="Attach (coming soon)"
+              aria-label="Attach files"
             >
               <Paperclip className="h-5 w-5" />
             </button>
@@ -444,7 +468,7 @@ function ChatPage() {
                 // Enter to send only when not composing; Shift+Enter = newline
                 if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
                   e.preventDefault();
-                  sendMessage(input);
+                  sendMessage(input, pendingAtts);
                 }
               }}
               rows={1}
@@ -454,11 +478,15 @@ function ChatPage() {
             />
 
             <button
-              onClick={() => sendMessage(input)}
-              disabled={!hasKey || !input.trim() || !!streamingId}
+              onClick={() => sendMessage(input, pendingAtts)}
+              disabled={
+                !hasKey ||
+                (!input.trim() && pendingAtts.length === 0) ||
+                !!streamingId
+              }
               className={cn(
                 "grid h-9 w-9 shrink-0 place-items-center rounded-lg transition",
-                !hasKey || !input.trim() || !!streamingId
+                !hasKey || (!input.trim() && pendingAtts.length === 0) || !!streamingId
                   ? "bg-muted text-muted-foreground"
                   : "bg-primary text-primary-foreground hover:opacity-90",
               )}
