@@ -118,11 +118,18 @@ export async function streamChatCompletion(
   body: Record<string, unknown>,
   cb: StreamCallbacks,
 ) {
+  if (typeof navigator !== "undefined" && !navigator.onLine) {
+    cb.onError(new Error("You are offline. Chat requires internet."));
+    return;
+  }
   try {
     const res = await fetch(OPENROUTER_URL, {
       method: "POST",
       headers: headers(apiKey),
       body: JSON.stringify(body),
+      // Belt & braces — even though our SW never intercepts cross-origin
+      // requests, bypass any browser HTTP cache for streaming completions.
+      cache: "no-store",
       signal: cb.signal,
     });
     if (!res.ok || !res.body) {
@@ -196,6 +203,9 @@ export async function verifyApiKey(apiKey: string): Promise<{
   message: string;
 }> {
   if (!apiKey.trim()) return { ok: false, message: "No API key provided." };
+  if (typeof navigator !== "undefined" && !navigator.onLine) {
+    return { ok: false, message: "You are offline. Chat requires internet." };
+  }
   try {
     const res = await fetch(OPENROUTER_MODELS_URL, {
       headers: { Authorization: `Bearer ${apiKey}` },

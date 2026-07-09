@@ -13,6 +13,8 @@ import { Toaster } from "sonner";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { ThemeController } from "../components/mgi/ThemeController";
+import { OfflineBanner } from "../components/mgi/OfflineBanner";
+import { registerServiceWorker } from "../lib/mgi/pwa-register";
 
 function NotFoundComponent() {
   return (
@@ -131,9 +133,14 @@ function RootShell({ children }: { children: ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
+  useEffect(() => {
+    void registerServiceWorker();
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeController />
+      <OfflineBanner />
       <Outlet />
       <Toaster position="top-center" richColors closeButton />
     </QueryClientProvider>
