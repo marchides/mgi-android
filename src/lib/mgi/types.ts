@@ -1,5 +1,21 @@
 export type Role = "system" | "user" | "assistant";
 
+export type AttachmentKind = "image" | "pdf" | "text" | "other";
+
+export interface Attachment {
+  id: string;
+  name: string;
+  mime: string;
+  size: number;
+  kind: AttachmentKind;
+  /** Data URL for images/PDFs. Omitted from persisted history unless the user opts in. */
+  dataUrl?: string;
+  /** Extracted text for text/code files. Omitted from persisted history unless the user opts in. */
+  textContent?: string;
+  /** Read/attach error (e.g. too large). */
+  error?: string;
+}
+
 export interface ChatMessage {
   id: string;
   role: Role;
@@ -12,6 +28,7 @@ export interface ChatMessage {
     total_tokens?: number;
   };
   error?: string;
+  attachments?: Attachment[];
 }
 
 export interface Conversation {
@@ -61,6 +78,12 @@ export interface AppSettings {
   themeMode: ThemeMode;
   accent: AccentName;
   keyStatus: "unknown" | "valid" | "invalid";
+  // Attachments
+  enableAttachments: boolean;
+  saveAttachmentsInHistory: boolean;
+  maxAttachmentBytes: number;
+  visionModel: string;
+  warnLargeAttachments: boolean;
 }
 
 export const MODEL_PRESETS: { id: string; label: string }[] = [
@@ -104,4 +127,9 @@ export const DEFAULT_SETTINGS: AppSettings = {
   themeMode: "system",
   accent: "cobalt",
   keyStatus: "unknown",
+  enableAttachments: true,
+  saveAttachmentsInHistory: false,
+  maxAttachmentBytes: 20 * 1024 * 1024,
+  visionModel: "z-ai/glm-5v-turbo",
+  warnLargeAttachments: true,
 };

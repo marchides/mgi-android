@@ -3,6 +3,8 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   ArrowUp,
   Copy,
+  FileText,
+  ImageIcon,
   Menu,
   Paperclip,
   Pencil,
@@ -19,11 +21,19 @@ import { toast } from "sonner";
 import { MgiLogo } from "@/components/mgi/MgiLogo";
 import { MarkdownMessage } from "@/components/mgi/MarkdownMessage";
 import { useConversations, useSettings } from "@/lib/mgi/store";
-import type { ChatMessage, Conversation } from "@/lib/mgi/types";
+import type { Attachment, ChatMessage, Conversation } from "@/lib/mgi/types";
 import {
   buildOpenRouterBody,
+  estimateAttachmentsTokens,
   streamChatCompletion,
 } from "@/lib/mgi/openrouter";
+import {
+  humanSize,
+  isFileSupported,
+  readAttachment,
+  stripAttachmentPayload,
+} from "@/lib/mgi/attachments";
+import { getCapability } from "@/lib/mgi/models";
 import { estimateMessagesTokens } from "@/lib/mgi/tokens";
 import { cn } from "@/lib/utils";
 
@@ -40,7 +50,7 @@ export const Route = createFileRoute("/")({
 });
 
 function ChatPage() {
-  const { settings } = useSettings();
+  const { settings, update } = useSettings();
   const {
     conversations,
     activeId,
@@ -59,6 +69,8 @@ function ChatPage() {
   const listRef = useRef<HTMLDivElement | null>(null);
   const [editingMsgId, setEditingMsgId] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState("");
+  const [pendingAtts, setPendingAtts] = useState<Attachment[]>([]);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const active = useMemo<Conversation | null>(
     () => conversations.find((c) => c.id === activeId) ?? null,
@@ -78,29 +90,97 @@ function ChatPage() {
   };
 
   const hasKey = settings.apiKey.trim().length > 0;
+  const capability = getCapability(settings.model);
+  const totalPendingBytes = pendingAtts.reduce((n, a) => n + a.size, 0);
+  const pendingImageOnTextModel =
+    capability.known &&
+    !capability.cap.image &&
+    pendingAtts.some((a) => a.kind === "image" && !a.error);
+  const pendingPdfOnNoPdfModel =
+    capability.known &&
+    !capability.cap.pdf &&
+    pendingAtts.some((a) => a.kind === "pdf" && !a.error);
 
   // ---- Warnings ----
-  const inputTokensEstimate = active
-    ? estimateMessagesTokens(settings.systemPrompt, active.messages)
-    : estimateMessagesTokens(settings.systemPrompt, []);
+  const attachmentTextTokens = estimateAttachmentsTokens(pendingAtts);
+  const inputTokensEstimate =
+    (active
+      ? estimateMessagesTokens(settings.systemPrompt, active.messages)
+      : estimateMessagesTokens(settings.systemPrompt, [])) + attachmentTextTokens;
   const bigContext = inputTokensEstimate > 200_000;
   const bigOutput =
     settings.params.max_output_tokens !== "max" &&
     (settings.params.max_output_tokens as number) > 65_536;
+  const bigAttachments =
+    settings.warnLargeAttachments && totalPendingBytes > 5 * 1024 * 1024;
+
+  // ---- Attachments ----
+  async function onPickFiles(files: FileList | null) {
+    if (!files || files.length === 0) return;
+    if (!settings.enableAttachments) {
+      toast.error("Attachments are disabled in Settings.");
+      return;
+    }
+    const incoming: Attachment[] = [];
+    for (const file of Array.from(files)) {
+      if (!isFileSupported(file)) {
+        toast.error(`${file.name}: unsupported file type.`);
+        continue;
+      }
+      const att = await readAttachment(file, settings.maxAttachmentBytes);
+      if (att.error) toast.error(`${att.name}: ${att.error}`);
+      incoming.push(att);
+    }
+    setPendingAtts((prev) => [...prev, ...incoming]);
+  }
+
+  function removePending(id: string) {
+    setPendingAtts((prev) => prev.filter((a) => a.id !== id));
+  }
+
+  function switchToVisionModel() {
+    update({ model: settings.visionModel });
+    toast.success(`Switched to ${settings.visionModel}`);
+  }
 
   // ---- Send / stream ----
-  async function sendMessage(text: string) {
-    if (!text.trim()) return;
+  async function sendMessage(text: string, attachments: Attachment[] = []) {
+    const trimmedText = text.trim();
+    if (!trimmedText && attachments.length === 0) return;
     if (!hasKey) {
       toast.error("Add your OpenRouter API key in Settings.");
       return;
     }
+
+    // Model capability gate for images.
+    if (attachments.some((a) => a.kind === "image" && !a.error)) {
+      const { cap, known } = getCapability(settings.model);
+      if (known && !cap.image) {
+        toast.error(
+          "This model doesn't support image input. Switch to a vision model?",
+          {
+            action: {
+              label: `Use ${settings.visionModel}`,
+              onClick: switchToVisionModel,
+            },
+          },
+        );
+        return;
+      }
+      if (!known) {
+        toast.warning(
+          "Model capability unknown — sending image anyway. It may be rejected.",
+        );
+      }
+    }
+
     const conv = ensureConversation();
     const userMsg: ChatMessage = {
       id: crypto.randomUUID(),
       role: "user",
-      content: text.trim(),
+      content: trimmedText,
       createdAt: Date.now(),
+      attachments: attachments.length ? attachments : undefined,
     };
     const assistantMsg: ChatMessage = {
       id: crypto.randomUUID(),
@@ -110,10 +190,14 @@ function ChatPage() {
     };
     updateConversation(conv.id, (c) => ({
       ...c,
-      title: c.messages.length === 0 ? deriveTitle(text) : c.title,
+      title:
+        c.messages.length === 0
+          ? deriveTitle(trimmedText || attachments[0]?.name || "New chat")
+          : c.title,
       messages: [...c.messages, userMsg, assistantMsg],
     }));
     setInput("");
+    setPendingAtts([]);
     setStreamingId(assistantMsg.id);
 
     const history = [...conv.messages, userMsg];
@@ -124,6 +208,21 @@ function ChatPage() {
 
     let acc = "";
     let reasoning = "";
+    const finalizeAttachments = () => {
+      if (settings.saveAttachmentsInHistory || attachments.length === 0) return;
+      updateConversation(conv.id, (c) => ({
+        ...c,
+        messages: c.messages.map((m) =>
+          m.id === userMsg.id
+            ? {
+                ...m,
+                attachments: m.attachments?.map(stripAttachmentPayload),
+              }
+            : m,
+        ),
+      }));
+    };
+
     await streamChatCompletion(settings.apiKey, body, {
       signal: ac.signal,
       onDelta: (t) => {
@@ -153,6 +252,7 @@ function ChatPage() {
         }));
       },
       onDone: () => {
+        finalizeAttachments();
         setStreamingId(null);
         abortRef.current = null;
       },
@@ -165,6 +265,7 @@ function ChatPage() {
               : m,
           ),
         }));
+        finalizeAttachments();
         setStreamingId(null);
         abortRef.current = null;
         toast.error(err.message);
@@ -249,11 +350,28 @@ function ChatPage() {
       </header>
 
       {/* Warnings */}
-      {(bigContext || bigOutput || !hasKey) && (
+      {(bigContext || bigOutput || !hasKey || bigAttachments || pendingImageOnTextModel || pendingPdfOnNoPdfModel) && (
         <div className="border-b border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground space-y-1">
           {!hasKey && <p>⚠ Add your OpenRouter API key in Settings to start chatting.</p>}
           {bigContext && <p>⚠ Large context may be slow and expensive.</p>}
           {bigOutput && <p>⚠ Very large outputs can be slow and costly.</p>}
+          {bigAttachments && (
+            <p>⚠ Large attachments ({humanSize(totalPendingBytes)}) can raise cost and latency.</p>
+          )}
+          {pendingImageOnTextModel && (
+            <p>
+              ⚠ {settings.model} may not support images.{" "}
+              <button
+                onClick={switchToVisionModel}
+                className="underline hover:text-foreground"
+              >
+                Switch to {settings.visionModel}
+              </button>
+            </p>
+          )}
+          {pendingPdfOnNoPdfModel && (
+            <p>⚠ {settings.model} may not support PDFs. The provider may reject the file.</p>
+          )}
         </div>
       )}
 
@@ -310,12 +428,36 @@ function ChatPage() {
 
       {/* Composer */}
       <div className="sticky bottom-0 z-10 border-t border-border bg-background/95 backdrop-blur px-3 pb-[max(env(safe-area-inset-bottom),0.5rem)] pt-2">
-        <div className="mx-auto max-w-2xl">
+        <div className="mx-auto max-w-2xl space-y-2">
+          {pendingAtts.length > 0 && (
+            <AttachmentStrip
+              atts={pendingAtts}
+              onRemove={removePending}
+              onClearAll={() => setPendingAtts([])}
+            />
+          )}
           <div className="mgi-composer flex items-end gap-2 rounded-2xl border border-border bg-card p-2 shadow-sm focus-within:ring-2 focus-within:ring-ring">
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              className="hidden"
+              accept="image/png,image/jpeg,image/webp,application/pdf,text/*,.md,.json,.csv,.html,.css,.js,.jsx,.ts,.tsx,.py"
+              onChange={(e) => {
+                void onPickFiles(e.target.files);
+                e.target.value = "";
+              }}
+            />
             <button
-              onClick={() => toast.info("Attachments coming soon.")}
+              onClick={() => {
+                if (!settings.enableAttachments) {
+                  toast.error("Attachments are disabled in Settings.");
+                  return;
+                }
+                fileInputRef.current?.click();
+              }}
               className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-muted-foreground hover:bg-muted"
-              aria-label="Attach (coming soon)"
+              aria-label="Attach files"
             >
               <Paperclip className="h-5 w-5" />
             </button>
@@ -326,7 +468,7 @@ function ChatPage() {
                 // Enter to send only when not composing; Shift+Enter = newline
                 if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
                   e.preventDefault();
-                  sendMessage(input);
+                  sendMessage(input, pendingAtts);
                 }
               }}
               rows={1}
@@ -336,11 +478,15 @@ function ChatPage() {
             />
 
             <button
-              onClick={() => sendMessage(input)}
-              disabled={!hasKey || !input.trim() || !!streamingId}
+              onClick={() => sendMessage(input, pendingAtts)}
+              disabled={
+                !hasKey ||
+                (!input.trim() && pendingAtts.length === 0) ||
+                !!streamingId
+              }
               className={cn(
                 "grid h-9 w-9 shrink-0 place-items-center rounded-lg transition",
-                !hasKey || !input.trim() || !!streamingId
+                !hasKey || (!input.trim() && pendingAtts.length === 0) || !!streamingId
                   ? "bg-muted text-muted-foreground"
                   : "bg-primary text-primary-foreground hover:opacity-90",
               )}
@@ -508,7 +654,18 @@ function MessageBubble({
             </div>
           </div>
         ) : isUser ? (
-          <p className="mgi-user-bubble whitespace-pre-wrap">{m.content}</p>
+          <div className="flex flex-col gap-2">
+            {m.content && (
+              <p className="mgi-user-bubble whitespace-pre-wrap">{m.content}</p>
+            )}
+            {m.attachments && m.attachments.length > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                {m.attachments.map((a) => (
+                  <AttachmentChip key={a.id} a={a} compact />
+                ))}
+              </div>
+            )}
+          </div>
         ) : (
           <>
             {m.reasoning && (
@@ -629,6 +786,82 @@ function ConversationRow({
             <Trash2 className="h-3.5 w-3.5" />
           </button>
         </>
+      )}
+    </div>
+  );
+}
+
+function AttachmentStrip({
+  atts,
+  onRemove,
+  onClearAll,
+}: {
+  atts: Attachment[];
+  onRemove: (id: string) => void;
+  onClearAll: () => void;
+}) {
+  return (
+    <div className="flex items-center gap-2 overflow-x-auto pb-1">
+      <div className="flex flex-1 flex-wrap gap-1.5">
+        {atts.map((a) => (
+          <AttachmentChip key={a.id} a={a} onRemove={() => onRemove(a.id)} />
+        ))}
+      </div>
+      {atts.length > 1 && (
+        <button
+          onClick={onClearAll}
+          className="shrink-0 rounded-full border border-border bg-card px-2 py-1 text-[11px] text-muted-foreground hover:bg-muted"
+        >
+          Clear all
+        </button>
+      )}
+    </div>
+  );
+}
+
+function AttachmentChip({
+  a,
+  onRemove,
+  compact,
+}: {
+  a: Attachment;
+  onRemove?: () => void;
+  compact?: boolean;
+}) {
+  const Icon = a.kind === "image" ? ImageIcon : FileText;
+  return (
+    <div
+      className={cn(
+        "inline-flex max-w-full items-center gap-2 rounded-lg border border-border bg-card px-2 py-1 text-xs",
+        compact && "bg-background/40",
+        a.error && "border-destructive/60",
+      )}
+      title={a.error ?? `${a.name} · ${humanSize(a.size)}`}
+    >
+      {a.kind === "image" && a.dataUrl ? (
+        <img
+          src={a.dataUrl}
+          alt=""
+          className="h-6 w-6 rounded object-cover"
+        />
+      ) : (
+        <Icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+      )}
+      <div className="min-w-0 leading-tight">
+        <div className="truncate max-w-[160px] font-medium">{a.name}</div>
+        <div className="text-[10px] text-muted-foreground">
+          {a.kind.toUpperCase()} · {humanSize(a.size)}
+          {a.error ? ` · ${a.error}` : ""}
+        </div>
+      </div>
+      {onRemove && (
+        <button
+          onClick={onRemove}
+          aria-label={`Remove ${a.name}`}
+          className="grid h-5 w-5 shrink-0 place-items-center rounded hover:bg-muted"
+        >
+          <X className="h-3 w-3" />
+        </button>
       )}
     </div>
   );
