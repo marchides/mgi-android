@@ -311,7 +311,7 @@ function ChatPage() {
       {/* Composer */}
       <div className="sticky bottom-0 z-10 border-t border-border bg-background/95 backdrop-blur px-3 pb-[max(env(safe-area-inset-bottom),0.5rem)] pt-2">
         <div className="mx-auto max-w-2xl">
-          <div className="flex items-end gap-2 rounded-2xl border border-border bg-card p-2 shadow-sm focus-within:ring-2 focus-within:ring-ring">
+          <div className="mgi-composer flex items-end gap-2 rounded-2xl border border-border bg-card p-2 shadow-sm focus-within:ring-2 focus-within:ring-ring">
             <button
               onClick={() => toast.info("Attachments coming soon.")}
               className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-muted-foreground hover:bg-muted"
@@ -334,6 +334,7 @@ function ChatPage() {
               className="mgi-scroll min-h-[38px] max-h-40 flex-1 resize-none bg-transparent px-1 py-2 text-[15px] outline-none placeholder:text-muted-foreground"
               style={{ lineHeight: 1.4 }}
             />
+
             <button
               onClick={() => sendMessage(input)}
               disabled={!hasKey || !input.trim() || !!streamingId}
